@@ -29,7 +29,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /path/to/your/project
+          cd /Xproject/EMOtestapp
           git pull origin master
           sudo docker-compose pull
           sudo docker-compose up -d
