@@ -29,10 +29,13 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /Xproject/EMOtestapp
-          git pull origin master
-          sudo docker-compose pull
-          sudo docker-compose up -d
+           cd /path/to/your/project
+          git pull origin main
+          sudo /usr/local/bin/docker-compose pull
+          sudo /usr/local/bin/docker-compose up -d
           sudo firewall-cmd --permanent --add-port=8080/tcp
           sudo firewall-cmd --reload
-
+          # CentOS 7 specific commands
+          sudo systemctl restart docker
+          # If you're using SELinux, you might need to run:
+          # sudo chcon -Rt svirt_sandbox_file_t /path/to/your/project
