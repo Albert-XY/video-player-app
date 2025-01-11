@@ -18,6 +18,7 @@ jobs:
       run: |
         sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
 
     - name: Login to DockerHub
       uses: docker/login-action@v1
@@ -37,7 +38,6 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          # Create symlink for docker-compose if it doesn't exist
           sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
           cd /path/to/your/project
           git pull origin main
@@ -45,8 +45,5 @@ jobs:
           sudo /usr/local/bin/docker-compose up -d
           sudo firewall-cmd --permanent --add-port=8080/tcp
           sudo firewall-cmd --reload
-          # CentOS 7 specific commands
           sudo systemctl restart docker
-          # If you're using SELinux, you might need to run:
-          # sudo chcon -Rt svirt_sandbox_file_t /path/to/your/project
 
