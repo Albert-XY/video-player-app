@@ -12,22 +12,22 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v2
 
-    - name: Install Docker Compose
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
-        docker-compose --version
+    - name: Set up Docker Compose
+      uses: KengoTODA/actions-setup-docker-compose@v1
+      with:
+        version: '2.29.2'
 
     - name: Login to DockerHub
-      uses: docker/login-action@v1
+      uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build and push Docker images
       run: |
+        docker-compose --version
         docker-compose build
         docker-compose push
 
@@ -38,11 +38,10 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
           cd /path/to/your/project
           git pull origin main
-          sudo /usr/local/bin/docker-compose pull
-          sudo /usr/local/bin/docker-compose up -d
+          docker-compose pull
+          docker-compose up -d
           sudo firewall-cmd --permanent --add-port=8080/tcp
           sudo firewall-cmd --reload
           sudo systemctl restart docker
