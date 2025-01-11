@@ -29,7 +29,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-           cd /path/to/your/project
+          cd /path/to/your/project
           git pull origin main
           sudo /usr/local/bin/docker-compose pull
           sudo /usr/local/bin/docker-compose up -d
