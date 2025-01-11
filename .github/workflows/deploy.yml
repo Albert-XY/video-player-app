@@ -18,12 +18,13 @@ jobs:
       run: |
         sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         sudo chmod +x /usr/local/bin/docker-compose
-        /usr/local/bin/docker-compose --version
+        sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+        docker-compose --version
 
-    - name: Verify Docker Compose installation
+    - name: Verify Docker Compose
       run: |
         which docker-compose || echo "docker-compose not found"
-        /usr/local/bin/docker-compose --version
+        docker-compose --version
 
     - name: Login to DockerHub
       uses: docker/login-action@v2
@@ -33,9 +34,9 @@ jobs:
 
     - name: Build and push Docker images
       run: |
-        docker compose version
-        docker compose build
-        docker compose push
+        docker-compose --version
+        docker-compose build
+        docker-compose push
 
     - name: Deploy to CentOS 7 server
       uses: appleboy/ssh-action@master
@@ -51,4 +52,3 @@ jobs:
           sudo firewall-cmd --permanent --add-port=8080/tcp
           sudo firewall-cmd --reload
           sudo systemctl restart docker
-
