@@ -3,7 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
@@ -11,30 +11,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Install Docker Compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.17.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-        docker-compose --version
-
-    - name: Verify Docker Compose
-      run: |
-        which docker-compose || echo "docker-compose not found"
-        docker-compose --version
-
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v1
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Build and push Docker images
       run: |
-        docker-compose --version
         docker-compose build
         docker-compose push
 
@@ -45,10 +29,13 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /path/to/your/project
-          git pull origin main
-          docker-compose pull
-          docker-compose up -d
+          cd /Xproject/EMOtestapp/video-player-app
+          git pull origin master
+          sudo /usr/local/bin/docker-compose pull
+          sudo /usr/local/bin/docker-compose up -d
           sudo firewall-cmd --permanent --add-port=8080/tcp
           sudo firewall-cmd --reload
+          # CentOS 7 specific commands
           sudo systemctl restart docker
+          # If you're using SELinux, you might need to run:
+          # sudo chcon -Rt svirt_sandbox_file_t /Xproject/EMOtestapp/video-player-app
