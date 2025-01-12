@@ -24,7 +24,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /Xproject/EMOtestapp/video-player-app
+          cd Xproject/EMOtestapp/video-player-app
           git pull origin master
           docker-compose build
           docker-compose push
@@ -34,5 +34,5 @@ jobs:
           sudo firewall-cmd --reload
           sudo systemctl restart docker
           # If you're using SELinux, you might need to run:
-          # sudo chcon -Rt svirt_sandbox_file_t /Xproject/EMOtestapp/video-player-app
+          # sudo chcon -Rt svirt_sandbox_file_t Xproject/EMOtestapp/video-player-app
 
