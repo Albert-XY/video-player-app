@@ -24,7 +24,7 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd /Xproject/EMOtestapp/video-player-app
+          cd Xproject/EMOtestapp/video-player-app
           git fetch --all
           git reset --hard origin/master
           if [ -f docker-compose.yml ]; then
