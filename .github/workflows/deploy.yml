@@ -24,15 +24,23 @@ jobs:
         username: ${{ secrets.SERVER_USERNAME }}
         key: ${{ secrets.SERVER_SSH_KEY }}
         script: |
-          cd Xproject/EMOtestapp/video-player-app
-          git pull origin master
-          docker-compose build
-          docker-compose push
-          docker-compose pull
-          docker-compose up -d
-          sudo firewall-cmd --permanent --add-port=8080/tcp
-          sudo firewall-cmd --reload
-          sudo systemctl restart docker
-          # If you're using SELinux, you might need to run:
-          # sudo chcon -Rt svirt_sandbox_file_t Xproject/EMOtestapp/video-player-app
+          cd /Xproject/EMOtestapp/video-player-app
+          git fetch --all
+          git reset --hard origin/master
+          if [ -f docker-compose.yml ]; then
+            docker-compose build
+            docker-compose push
+            docker-compose pull
+            docker-compose up -d
+          else
+            echo "docker-compose.yml not found in the current directory"
+            exit 1
+          fi
+          if [ -f /etc/sudoers.d/github-actions ]; then
+            sudo -n firewall-cmd --permanent --add-port=8080/tcp
+            sudo -n firewall-cmd --reload
+            sudo -n systemctl restart docker
+          else
+            echo "Sudo permissions not set up for non-interactive use"
+          fi
 
