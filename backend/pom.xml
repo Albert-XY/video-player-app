@@ -29,15 +29,6 @@
         </repository>
     </repositories>
 
-    <mirrors>
-        <mirror>
-            <id>aliyun-central</id>
-            <name>Aliyun Maven Central</name>
-            <url>https://maven.aliyun.com/repository/central</url>
-            <mirrorOf>central</mirrorOf>
-        </mirror>
-    </mirrors>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
