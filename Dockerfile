@@ -10,7 +10,10 @@ COPY frontend/ ./
 RUN npm cache clean --force && \
     npm install --save-dev webpack@5.75.0 webpack-cli@4.10.0 && \
     npm list webpack webpack-cli
-RUN npx webpack --mode production
+# Add verbose logging for webpack build
+RUN npx webpack --mode production --progress --verbose
+# Verify build output exists
+RUN ls -la build/
 RUN node -v
 RUN npm -v
 
