@@ -5,8 +5,11 @@ RUN npm config set registry https://registry.npmmirror.com/
 COPY frontend/package*.json ./
 RUN npm install
 RUN chmod +x ./node_modules/.bin/webpack
+RUN ls -l ./node_modules/.bin/webpack
 COPY frontend/ ./
-RUN npm run build
+RUN npx webpack --mode production
+RUN node -v
+RUN npm -v
 
 # Stage 2: Build the Java backend
 FROM maven:3.8.1-openjdk-11 as backend-build
