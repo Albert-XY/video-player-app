@@ -4,6 +4,7 @@ WORKDIR /app/frontend
 RUN npm config set registry https://registry.npmmirror.com/
 COPY frontend/package*.json ./
 RUN npm install
+RUN chmod +x ./node_modules/.bin/webpack
 COPY frontend/ ./
 RUN npm run build
 
