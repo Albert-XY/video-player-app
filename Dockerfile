@@ -7,6 +7,7 @@ RUN npm install
 RUN chmod +x ./node_modules/.bin/webpack
 RUN ls -l ./node_modules/.bin/webpack
 COPY frontend/ ./
+RUN npm install --save-dev webpack-cli
 RUN npx webpack --mode production
 RUN node -v
 RUN npm -v
