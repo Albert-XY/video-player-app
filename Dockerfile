@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build the Java backend
-FROM maven:3.8.1-openjdk-17 as backend-build
+FROM maven:3.8.1-openjdk-11 as backend-build
 WORKDIR /app/backend
 COPY backend/pom.xml ./
 RUN mvn dependency:go-offline
@@ -24,7 +24,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ml /app/ml
 
 # Stage 4: Final stage
-FROM openjdk:17-jdk-slim
+FROM openjdk:11-jdk-slim
 WORKDIR /app
 
 # Copy the built artifacts from previous stages
