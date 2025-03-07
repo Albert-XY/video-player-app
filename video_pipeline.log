@@ -1,0 +1,20 @@
+2025-02-14 22:28:39,527 - __main__ - INFO - 创建数据库连接池...
+2025-02-14 22:28:39,552 - __main__ - ERROR - 创建数据库连接池失败: invalid dsn: invalid connection option "max_retries"
+
+2025-02-14 22:28:39,562 - __main__ - ERROR - Traceback (most recent call last):
+  File "D:\PycharmProjects\video-player-app\python\video_pipeline.py", line 32, in <module>
+    db_pool = psycopg2.pool.SimpleConnectionPool(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\psycopg2\pool.py", line 59, in __init__
+    self._connect()
+  File "D:\Anaconda3\Lib\site-packages\psycopg2\pool.py", line 63, in _connect
+    conn = psycopg2.connect(*self._args, **self._kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\psycopg2\__init__.py", line 121, in connect
+    dsn = _ext.make_dsn(dsn, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Anaconda3\Lib\site-packages\psycopg2\extensions.py", line 167, in make_dsn
+    parse_dsn(dsn)
+psycopg2.ProgrammingError: invalid dsn: invalid connection option "max_retries"
+
+

@@ -1,0 +1,293 @@
+2025-03-04 08:54:04 [main] INFO  c.e.v.VideoPlayerApplication - Starting VideoPlayerApplication using Java 21.0.6 with PID 24220 (D:\PycharmProjects\video-player-app\backend\target\classes started by X Albert in D:\PycharmProjects\video-player-app\backend)
+2025-03-04 08:54:04 [main] DEBUG c.e.v.VideoPlayerApplication - Running with Spring Boot v3.2.2, Spring v6.1.3
+2025-03-04 08:54:04 [main] INFO  c.e.v.VideoPlayerApplication - No active profile set, falling back to 1 default profile: "default"
+2025-03-04 08:54:05 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-03-04 08:54:05 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 25 ms. Found 2 JPA repository interfaces.
+2025-03-04 08:54:05 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-03-04 08:54:05 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-03-04 08:54:05 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.18]
+2025-03-04 08:54:05 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-03-04 08:54:05 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 675 ms
+2025-03-04 08:54:05 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-03-04 08:54:05 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2025-03-04 08:54:05 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-03-04 08:54:05 [main] INFO  o.s.b.a.h.H2ConsoleAutoConfiguration - H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
+2025-03-04 08:54:05 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-03-04 08:54:05 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.4.1.Final
+2025-03-04 08:54:05 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-03-04 08:54:05 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-03-04 08:54:05 [main] WARN  org.hibernate.dialect.Dialect - HHH000511: The 2.2.0 version for [org.hibernate.dialect.PostgreSQLDialect] is no longer supported, hence certain features may not work properly. The minimum supported version is 12.0.0. Check the community dialects project for available legacy versions.
+2025-03-04 08:54:05 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-03-04 08:54:06 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table comment (
+        id bigserial not null,
+        content varchar(255),
+        created_at timestamp(6),
+        user_id varchar(255),
+        version bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table experiment_videos (
+        id bigserial not null,
+        end_time timestamp(6),
+        evaluated boolean not null,
+        sequence integer not null,
+        start_time timestamp(6),
+        version bigint,
+        experiment_id bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table experiments (
+        id bigserial not null,
+        completed boolean not null,
+        end_time timestamp(6),
+        participant_id varchar(255),
+        start_time timestamp(6),
+        version bigint,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table users (
+        id bigserial not null,
+        active boolean not null,
+        created_at timestamp(6) not null,
+        email varchar(255),
+        full_name varchar(255),
+        last_login_time timestamp(6),
+        password varchar(255) not null,
+        role varchar(255) not null,
+        updated_at timestamp(6) not null,
+        username varchar(255) not null,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table video (
+        id bigserial not null,
+        arousal_score float(53) not null,
+        category varchar(255),
+        experimental boolean not null,
+        path varchar(255),
+        title varchar(255),
+        valence_score float(53) not null,
+        version bigint,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    create table video_evaluation (
+        id bigserial not null,
+        arousal float(53) not null,
+        evaluation_time timestamp(6),
+        processed boolean not null,
+        valence float(53) not null,
+        version bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       drop constraint if exists UK_6dotkott2kjsp8vw4d0m25fb7
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       add constraint UK_6dotkott2kjsp8vw4d0m25fb7 unique (email)
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       drop constraint if exists UK_r43af9ap4edm43mmtq01oddj6
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username)
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists comment 
+       add constraint FKbsuh08kv1lyh8v6ivufrollr6 
+       foreign key (video_id) 
+       references video
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists experiment_videos 
+       add constraint FKk7o44l3p5sepxknxb8yf2wx9x 
+       foreign key (experiment_id) 
+       references experiments
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists experiment_videos 
+       add constraint FKjbn6073y1epp9iyvhix5d7t63 
+       foreign key (video_id) 
+       references video
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists video_evaluation 
+       add constraint FKr807gpxob1ydnqftxmnigu9ab 
+       foreign key (video_id) 
+       references video
+2025-03-04 08:54:06 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-03-04 08:54:06 [main] DEBUG o.s.s.c.a.a.c.AuthenticationConfiguration$DefaultPasswordEncoderAuthenticationManagerBuilder - No authenticationProviders and no parentAuthenticationManager defined. Returning null.
+2025-03-04 08:54:06 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-03-04 08:54:06 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 7 mappings in 'requestMappingHandlerMapping'
+2025-03-04 08:54:06 [main] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2025-03-04 08:54:06 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@f047670, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@7a91027c, org.springframework.security.web.context.SecurityContextHolderFilter@5bed8b91, org.springframework.security.web.header.HeaderWriterFilter@4010f232, org.springframework.web.filter.CorsFilter@27d44578, org.springframework.security.web.authentication.logout.LogoutFilter@55a2ca5e, com.example.videoplayerapp.security.jwt.JwtAuthenticationFilter@2446597e, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@738ae785, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@13288174, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@8dd0c70, org.springframework.security.web.session.SessionManagementFilter@51c15508, org.springframework.security.web.access.ExceptionTranslationFilter@6c3627c, org.springframework.security.web.access.intercept.AuthorizationFilter@1e186006]
+2025-03-04 08:54:06 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-03-04 08:54:06 [main] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-03-04 08:54:06 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path ''
+2025-03-04 08:54:06 [main] INFO  c.e.v.VideoPlayerApplication - Started VideoPlayerApplication in 2.252 seconds (process running for 2.476)
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    /* insert for
+        com.example.videoplayerapp.model.Video */insert 
+    into
+        video (arousal_score, category, experimental, path, title, valence_score, version) 
+    values
+        (?, ?, ?, ?, ?, ?, ?)
+2025-03-04 08:54:06 [main] DEBUG org.hibernate.SQL - 
+    /* insert for
+        com.example.videoplayerapp.model.Video */insert 
+    into
+        video (arousal_score, category, experimental, path, title, valence_score, version) 
+    values
+        (?, ?, ?, ?, ?, ?, ?)
+2025-03-04 12:02:14 [HikariPool-1 housekeeper] WARN  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=2h26m8s585ms115µs800ns).
+2025-03-04 17:04:56 [main] INFO  c.e.v.VideoPlayerApplication - Starting VideoPlayerApplication using Java 21.0.6 with PID 13912 (D:\PycharmProjects\video-player-app\backend\target\classes started by X Albert in D:\PycharmProjects\video-player-app\backend)
+2025-03-04 17:04:56 [main] DEBUG c.e.v.VideoPlayerApplication - Running with Spring Boot v3.2.2, Spring v6.1.3
+2025-03-04 17:04:56 [main] INFO  c.e.v.VideoPlayerApplication - No active profile set, falling back to 1 default profile: "default"
+2025-03-04 17:04:56 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2025-03-04 17:04:56 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 26 ms. Found 2 JPA repository interfaces.
+2025-03-04 17:04:56 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8081 (http)
+2025-03-04 17:04:56 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-03-04 17:04:56 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.18]
+2025-03-04 17:04:56 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-03-04 17:04:56 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 663 ms
+2025-03-04 17:04:56 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-03-04 17:04:56 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2025-03-04 17:04:56 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-03-04 17:04:56 [main] INFO  o.s.b.a.h.H2ConsoleAutoConfiguration - H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
+2025-03-04 17:04:56 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+2025-03-04 17:04:56 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 6.4.1.Final
+2025-03-04 17:04:56 [main] INFO  o.h.c.i.RegionFactoryInitiator - HHH000026: Second-level cache disabled
+2025-03-04 17:04:57 [main] INFO  o.s.o.j.p.SpringPersistenceUnitInfo - No LoadTimeWeaver setup: ignoring JPA class transformer
+2025-03-04 17:04:57 [main] WARN  org.hibernate.dialect.Dialect - HHH000511: The 2.2.0 version for [org.hibernate.dialect.PostgreSQLDialect] is no longer supported, hence certain features may not work properly. The minimum supported version is 12.0.0. Check the community dialects project for available legacy versions.
+2025-03-04 17:04:57 [main] WARN  org.hibernate.orm.deprecation - HHH90000025: PostgreSQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2025-03-04 17:04:57 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table comment (
+        id bigserial not null,
+        content varchar(255),
+        created_at timestamp(6),
+        user_id varchar(255),
+        version bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table experiment_videos (
+        id bigserial not null,
+        end_time timestamp(6),
+        evaluated boolean not null,
+        sequence integer not null,
+        start_time timestamp(6),
+        version bigint,
+        experiment_id bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table experiments (
+        id bigserial not null,
+        completed boolean not null,
+        end_time timestamp(6),
+        participant_id varchar(255),
+        start_time timestamp(6),
+        version bigint,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table users (
+        id bigserial not null,
+        active boolean not null,
+        created_at timestamp(6) not null,
+        email varchar(255),
+        full_name varchar(255),
+        last_login_time timestamp(6),
+        password varchar(255) not null,
+        role varchar(255) not null,
+        updated_at timestamp(6) not null,
+        username varchar(255) not null,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table video (
+        id bigserial not null,
+        arousal_score float(53) not null,
+        category varchar(255),
+        experimental boolean not null,
+        path varchar(255),
+        title varchar(255),
+        valence_score float(53) not null,
+        version bigint,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    create table video_evaluation (
+        id bigserial not null,
+        arousal float(53) not null,
+        evaluation_time timestamp(6),
+        processed boolean not null,
+        valence float(53) not null,
+        version bigint,
+        video_id bigint,
+        primary key (id)
+    )
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       drop constraint if exists UK_6dotkott2kjsp8vw4d0m25fb7
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       add constraint UK_6dotkott2kjsp8vw4d0m25fb7 unique (email)
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       drop constraint if exists UK_r43af9ap4edm43mmtq01oddj6
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists users 
+       add constraint UK_r43af9ap4edm43mmtq01oddj6 unique (username)
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists comment 
+       add constraint FKbsuh08kv1lyh8v6ivufrollr6 
+       foreign key (video_id) 
+       references video
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists experiment_videos 
+       add constraint FKk7o44l3p5sepxknxb8yf2wx9x 
+       foreign key (experiment_id) 
+       references experiments
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists experiment_videos 
+       add constraint FKjbn6073y1epp9iyvhix5d7t63 
+       foreign key (video_id) 
+       references video
+2025-03-04 17:04:57 [main] DEBUG org.hibernate.SQL - 
+    alter table if exists video_evaluation 
+       add constraint FKr807gpxob1ydnqftxmnigu9ab 
+       foreign key (video_id) 
+       references video
+2025-03-04 17:04:57 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+2025-03-04 17:04:57 [main] DEBUG o.s.s.c.a.a.c.AuthenticationConfiguration$DefaultPasswordEncoderAuthenticationManagerBuilder - No authenticationProviders and no parentAuthenticationManager defined. Returning null.
+2025-03-04 17:04:57 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-03-04 17:04:57 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerMapping - 7 mappings in 'requestMappingHandlerMapping'
+2025-03-04 17:04:57 [main] DEBUG o.s.w.s.h.SimpleUrlHandlerMapping - Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2025-03-04 17:04:57 [main] INFO  o.s.s.web.DefaultSecurityFilterChain - Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@663cc8c9, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@51c15508, org.springframework.security.web.context.SecurityContextHolderFilter@6dd7af2f, org.springframework.security.web.header.HeaderWriterFilter@c950fd, org.springframework.web.filter.CorsFilter@164cad52, org.springframework.security.web.authentication.logout.LogoutFilter@5b312863, com.example.videoplayerapp.security.jwt.JwtAuthenticationFilter@5b977aaa, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@6c75c5e8, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@69374e28, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@5bed8b91, org.springframework.security.web.session.SessionManagementFilter@c6653e, org.springframework.security.web.access.ExceptionTranslationFilter@4df54c1, org.springframework.security.web.access.intercept.AuthorizationFilter@88e85a]
+2025-03-04 17:04:58 [main] DEBUG o.s.w.s.m.m.a.RequestMappingHandlerAdapter - ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-03-04 17:04:58 [main] DEBUG o.s.w.s.m.m.a.ExceptionHandlerExceptionResolver - ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-03-04 17:04:58 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8081 (http) with context path ''
+2025-03-04 17:04:58 [main] INFO  c.e.v.VideoPlayerApplication - Started VideoPlayerApplication in 2.322 seconds (process running for 2.556)
+2025-03-04 17:04:58 [main] DEBUG org.hibernate.SQL - 
+    /* insert for
+        com.example.videoplayerapp.model.Video */insert 
+    into
+        video (arousal_score, category, experimental, path, title, valence_score, version) 
+    values
+        (?, ?, ?, ?, ?, ?, ?)
+2025-03-04 17:04:58 [main] DEBUG org.hibernate.SQL - 
+    /* insert for
+        com.example.videoplayerapp.model.Video */insert 
+    into
+        video (arousal_score, category, experimental, path, title, valence_score, version) 
+    values
+        (?, ?, ?, ?, ?, ?, ?)

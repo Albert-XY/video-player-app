@@ -1,0 +1,48 @@
+/video-player-app
+├── app/
+│   ├── api/
+│   │   ├── login/
+│   │   │   └── route.ts
+│   │   ├── register/
+│   │   │   └── route.ts
+│   │   ├── videos/
+│   │   │   └── route.ts
+│   │   └── record-video-time/
+│   │       └── route.ts
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── globals.css
+├── components/
+│   ├── Background3D.tsx
+│   ├── LoginForm.tsx
+│   ├── RegisterForm.tsx
+│   └── VideoPlayer.tsx
+├── lib/
+│   ├── db.ts
+│   └── utils.ts
+├── public/
+│   └── videos/
+├── styles/
+│   └── VideoPlayer.css
+├── types/
+│   └── index.ts
+├── python/
+│   ├── video_scraper/
+│   │   ├── video_scraper/
+│   │   │   ├── spiders/
+│   │   │   │   └── video_spider.py
+│   │   │   ├── __init__.py
+│   │   │   ├── items.py
+│   │   │   ├── middlewares.py
+│   │   │   ├── pipelines.py
+│   │   │   └── settings.py
+│   │   └── scrapy.cfg
+│   ├── video_processor.py
+│   └── video_pipeline.py
+├── .env.local
+├── .env.production
+├── next.config.js
+├── package.json
+├── tsconfig.json
+└── README.md
+

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  video-player-app.iml 文件
+  这是一个 IntelliJ IDEA 项目的模块文件，包含了与项目模块相关的所有配置信息。
+  它定义了模块类型、模块内容、模块依赖、JDK 设置等信息，用于IDE正确地加载和管理项目。
+-->
+
+<module type="PYTHON_MODULE" version="4">
+  <!-- NewModuleRootManager 组件，管理模块的根目录和依赖项 -->
+  <component name="NewModuleRootManager">
+    <!-- content 元素定义模块的根目录，$MODULE_DIR$ 表示该模块的目录 -->
+    <content url="file://$MODULE_DIR$" />
+    
+    <!-- orderEntry 元素定义模块的依赖关系 -->
+    <!-- type="inheritedJdk" 表示该模块继承项目的 JDK 设置 -->
+    <orderEntry type="inheritedJdk" />
+    
+    <!-- orderEntry 元素定义源代码文件夹 -->
+    <!-- type="sourceFolder" 表示该目录包含源代码，forTests="false" 表示这不是测试文件夹 -->
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+
+  <!-- PyDocumentationSettings 组件，配置 Python 文档字符串的格式设置 -->
+  <component name="PyDocumentationSettings">
+    <!-- option 元素定义 Python 文档字符串的显示格式 -->
+    <!-- format="PLAIN" 表示使用纯文本格式显示文档字符串 -->
+    <option name="format" value="PLAIN" />
+    
+    <!-- option 元素定义文档字符串的格式 -->
+    <!-- myDocStringFormat="Plain" 表示使用普通文本格式 -->
+    <option name="myDocStringFormat" value="Plain" />
+  </component>
+</module>

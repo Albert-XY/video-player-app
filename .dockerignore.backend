@@ -1,0 +1,58 @@
+# 忽略git相关
+.git
+.gitignore
+.github
+
+# 忽略node模块
+node_modules
+**/node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# 忽略前端构建产物
+.next
+**/.next
+out
+build
+dist
+
+# 忽略开发文件
+*.md
+.editorconfig
+.eslintrc
+.prettierrc
+.vscode
+.idea
+
+# 忽略测试文件
+__tests__
+*.test.js
+*.spec.js
+
+# 忽略Python缓存文件
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 忽略环境
+env/
+venv/
+ENV/
+
+# 忽略Java相关
+backend/
+backend/**
+*.class
+*.jar
+*.war
+
+# 忽略前端相关
+components/
+pages/
+styles/
+public/
+app/
