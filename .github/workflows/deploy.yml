@@ -56,7 +56,14 @@ jobs:
         port: 22
         script_stop: true
         debug: true
+        timeout: 60s
+        command_timeout: 20m
         script: |
+          # 增加调试信息
+          echo "开始部署过程..."
+          pwd
+          whoami
+          
           # 进入项目目录
           cd /opt/video-player-app
           
