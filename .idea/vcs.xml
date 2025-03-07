@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  vcs.xml 文件
+  该文件用于存储项目的版本控制系统（VCS）设置，通常由 IDE（如 IntelliJ IDEA）自动生成。
+  它包含了与版本控制相关的配置信息，如将项目目录映射到特定的 VCS（如 Git）。
+-->
+
+<project version="4">
+  <!-- VcsDirectoryMappings 组件，管理项目目录与 VCS 的映射关系 -->
+  <component name="VcsDirectoryMappings">
+    <!-- mapping 元素用于定义项目目录与 VCS 的映射关系 -->
+    <!-- 'directory' 属性是项目的根目录（为空字符串表示项目根目录），'vcs' 属性指定所使用的版本控制系统，这里是 Git -->
+    <mapping directory="" vcs="Git" />
+  </component>
+</project>

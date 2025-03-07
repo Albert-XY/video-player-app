@@ -1,0 +1,122 @@
+name: Deploy to Production
+
+# 触发条件：当代码推送到 master 分支时触发
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 系统作为运行环境
+    
+    steps:
+    # 步骤 1：检出代码到工作目录
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    # 步骤 2：设置 Docker Buildx
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # 步骤 3：登录 DockerHub 容器注册表
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 步骤 4：构建和推送 Docker 镜像
+    - name: Build and push Docker images
+      run: |
+        # 设置环境变量
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        
+        # 构建和推送前端镜像
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest -f Dockerfile.frontend .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
+        
+        # 构建和推送后端镜像
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest -f Dockerfile.backend .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
+        
+        # 构建和推送 Nginx 镜像
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest -f Dockerfile.nginx .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
+    
+    # 步骤 5：通过 SSH 连接到生产服务器执行部署操作
+    - name: Deploy to Production Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        port: 22
+        script_stop: true
+        debug: true
+        script: |
+          # 进入项目目录
+          cd /opt/video-player-app
+          
+          # 创建备份
+          timestamp=$(date +%Y%m%d%H%M%S)
+          if [ -f docker-compose.prod.yml ]; then
+            cp docker-compose.prod.yml docker-compose.prod.yml.backup.$timestamp
+          fi
+          
+          # 更新代码
+          git fetch --all
+          git reset --hard origin/master
+          
+          # 创建环境变量文件（如果不存在）
+          if [ ! -f .env ]; then
+            echo "POSTGRES_DB=${POSTGRES_DB:-video_player}" > .env
+            echo "POSTGRES_USER=${POSTGRES_USER:-postgres}" >> .env
+            echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          fi
+          
+          # 登录 Docker Hub
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          
+          # 拉取最新镜像
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
+          
+          # 启动服务
+          docker-compose -f docker-compose.prod.yml down
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # 检查健康状态
+          echo "等待服务启动..."
+          sleep 30
+          
+          # 执行健康检查
+          health_status=$(curl -s http://localhost/api/health || echo '{"status":"unhealthy"}')
+          if [[ $health_status == *"healthy"* ]]; then
+            echo "部署成功：服务健康状态正常"
+          else
+            echo "部署警告：健康检查失败，可能需要进一步调查"
+            echo "$health_status"
+            
+            # 错误处理（自动回滚）
+            if [ -f docker-compose.prod.yml.backup.$timestamp ]; then
+              echo "正在回滚到之前的配置..."
+              cp docker-compose.prod.yml.backup.$timestamp docker-compose.prod.yml
+              docker-compose -f docker-compose.prod.yml down
+              docker-compose -f docker-compose.prod.yml up -d
+            fi
+          fi
+
+    # 步骤 6：通知部署结果
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "部署成功完成！"
+        else
+          echo "部署失败。请检查日志获取详细信息。"
+        fi

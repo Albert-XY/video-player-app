@@ -1,0 +1,10 @@
+setup.py
+video_scraper/__init__.py
+video_scraper/items.py
+video_scraper.egg-info/PKG-INFO
+video_scraper.egg-info/SOURCES.txt
+video_scraper.egg-info/dependency_links.txt
+video_scraper.egg-info/requires.txt
+video_scraper.egg-info/top_level.txt
+video_scraper/spiders/__init__.py
+video_scraper/spiders/video_spider.py

@@ -1,0 +1,35 @@
+version: '3'
+services:
+  video_player_and_eeg_processing:
+    build:
+      context: ./video_player
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+      - "3000:3000"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DATABASE_URL=postgres://admin:password@db:5432/videoeeg
+    depends_on:
+      - db
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: videoeeg
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  rvm_training:
+    build:
+      context: ./rvm_training
+    environment:
+      - DATABASE_URL=postgres://admin:password@db:5432/videoeeg
+    depends_on:
+      - db
+    volumes:
+      - ./audio_feature_extraction:/app/audio_feature_extraction
+      - ./video_feature_extraction:/app/video_feature_extraction
+
+volumes:
+  postgres_data:

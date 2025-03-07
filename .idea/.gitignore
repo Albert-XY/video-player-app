@@ -1,0 +1,9 @@
+# 默认忽略的文件和目录
+# 用于临时文件或缓存数据
+/shelf/                 
+/workspace.xml
+# 编辑器相关的HTTP请求
+/httpRequests/
+# 数据源本地存储的相关文件
+/dataSources/
+/dataSources.local.xml
