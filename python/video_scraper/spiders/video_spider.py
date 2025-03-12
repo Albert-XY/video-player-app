@@ -5,6 +5,7 @@ from scrapy.loader import ItemLoader
 from scrapy.exceptions import DropItem
 from config import SPIDER_SETTINGS, VIDEO_CONFIG
 import logging
+
 import re
 import json
 from datetime import datetime

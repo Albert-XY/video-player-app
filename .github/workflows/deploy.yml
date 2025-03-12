@@ -31,6 +31,9 @@ jobs:
     # 步骤 4：构建和推送 Docker 镜像
     - name: Build and push Docker images
       run: |
+        #配置 Docker 镜像加速器
+        echo "registry-mirrors = [\"https://registry.docker-cn.com\"]" > /etc/docker/daemon.json
+        sudo systemctl daemon-reload
         # 设置环境变量
         echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
         

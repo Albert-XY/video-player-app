@@ -1,12 +1,12 @@
 'use client'
-
+//客户端组件 支持使用React状态和事件处理。
 import { useState, useEffect } from 'react'
 import RegisterForm from '../components/forms/RegisterForm'
 import LoginForm from '../components/forms/LoginForm'
 import SAMVideoPlayer from '../components/media/SAMVideoPlayer'
 import ExperimentalVideoPlayer from '../components/experiments/ExperimentalVideoPlayer'
 import Background3D from '../components/Background3D'
-
+//除了导入了React的useState和useEffect钩子，用于管理组件状态和副作用；还导入了components目录下的组件:登录注册表单，SAM播放器，实验性播放器，3D背景。
 export default function Home() {
   // 状态定义
   const [isLoggedIn, setIsLoggedIn] = useState(false);
