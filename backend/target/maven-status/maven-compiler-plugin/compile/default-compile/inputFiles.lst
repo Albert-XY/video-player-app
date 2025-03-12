@@ -6,6 +6,7 @@ D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplaye
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\VideoPlayerApplication.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\service\VideoService.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\SecurityConfig.java
+D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\model\PendingVideo.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\repository\UserRepository.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\JwtAuthenticationFilter.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\model\Experiment.java
