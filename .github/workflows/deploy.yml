@@ -32,7 +32,7 @@ jobs:
     - name: Build and push Docker images
       run: |
         #配置 Docker 镜像加速器
-        echo '{"registry-mirrors": ["https://registry.docker-cn.com"]}' | sudo tee /etc/docker/daemon.json
+        echo '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}' | sudo tee /etc/docker/daemon.json
         sudo systemctl daemon-reload
         sudo systemctl restart docker
 
