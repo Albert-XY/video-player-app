@@ -51,91 +51,100 @@ jobs:
         docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest -f Dockerfile.nginx .
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
     
-    # 步骤 5：通过 SSH 连接到生产服务器执行部署操作
+     # 步骤 5：通过 SSH 连接到生产服务器执行部署操作
     - name: Deploy to Production Server
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: 22
-        debug: true
-        timeout: 60s
-        command_timeout: 20m
-        script: |
-          # 增加调试信息
-          echo "开始部署过程..."
-          pwd
-          whoami
-          id
-          
-          # 检查目录是否存在
-          if [ ! -d "$HOME/video-player-app" ]; then
-            echo "创建部署目录..."
-            sudo mkdir -p $HOME/video-player-app
-            sudo chown $(whoami):$(whoami) $HOME/video-player-app
-          fi
-          
-          # 进入项目目录
-          cd $HOME/video-player-app
-
-          # 检查是否是 Git 仓库
-          if [ ! -d "$HOME/video-player-app/.git" ]; then
-            echo "克隆 Git 仓库..."
-            git clone https://github.com/Albert-XY/video-player-app.git "$HOME/video-player-app"
-          fi
-          cd "$HOME/video-player-app"
-
-          # 创建备份
-          timestamp=$(date +%Y%m%d%H%M%S)
-          if [ -f docker-compose.prod.yml ]; then
-            cp docker-compose.prod.yml docker-compose.prod.yml.backup.$timestamp
-          fi
-          
-          # 更新代码
-          git fetch --all
-          git reset --hard origin/master
-          
-          # 创建环境变量文件（如果不存在）
-          if [ ! -f .env ]; then
-            echo "POSTGRES_DB=${POSTGRES_DB:-video_player}" > .env
-            echo "POSTGRES_USER=${POSTGRES_USER:-postgres}" >> .env
-            echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          fi
-          
-          # 登录 Docker Hub
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          
-          # 拉取最新镜像
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
-          
-          # 启动服务
-          docker-compose -f docker-compose.prod.yml down
-          docker-compose -f docker-compose.prod.yml up -d
-          
-          # 检查健康状态
-          echo "等待服务启动..."
-          sleep 30
-          
-          # 执行健康检查
-          health_status=$(curl -s http://localhost/api/health || echo '{"status":"unhealthy"}')
-          if [[ $health_status == *"healthy"* ]]; then
-            echo "部署成功：服务健康状态正常"
-          else
-            echo "部署警告：健康检查失败，可能需要进一步调查"
-            echo "$health_status"
-            
-            # 错误处理（自动回滚）
-            if [ -f docker-compose.prod.yml.backup.$timestamp ]; then
-              echo "正在回滚到之前的配置..."
-              cp docker-compose.prod.yml.backup.$timestamp docker-compose.prod.yml
-              docker-compose -f docker-compose.prod.yml down
-              docker-compose -f docker-compose.prod.yml up -d
-            fi
-          fi
+       host: ${{ secrets.SERVER_HOST }}
+       username: ${{ secrets.SERVER_USERNAME }}
+       password: ${{ secrets.SERVER_PASSWORD }}
+       port: 22
+       debug: true
+       timeout: 60s
+       command_timeout: 20m
+       script: |
+         # 增加调试信息
+         echo "开始部署过程..."
+         pwd
+         whoami
+         id
+         
+         # 检查目录是否存在
+         if [ ! -d "$HOME/video-player-app" ]; then
+           echo "创建部署目录..."
+           sudo mkdir -p $HOME/video-player-app
+           sudo chown $(whoami):$(whoami) $HOME/video-player-app
+         fi
+         
+         # 进入项目目录
+         cd $HOME/video-player-app
+         
+         # 检查是否是 Git 仓库
+         if [ ! -d "$HOME/video-player-app/.git" ]; then
+           echo "目录不是 Git 仓库，正在处理..."
+           if [ "$(ls -A $HOME/video-player-app)" ]; then
+             echo "目录不为空，正在备份并清空目录..."
+             timestamp=$(date +%Y%m%d%H%M%S)
+             mkdir -p "$HOME/video-player-app-backup-$timestamp"
+             mv "$HOME/video-player-app"/* "$HOME/video-player-app-backup-$timestamp/"
+           fi
+           echo "克隆 Git 仓库..."
+           git clone https://github.com/Albert-XY/video-player-app.git "$HOME/video-player-app"
+         else
+           echo "目录已经是 Git 仓库，正在拉取最新代码..."
+           git fetch --all
+           git reset --hard origin/master
+         fi
+         
+         # 进入项目目录
+         cd "$HOME/video-player-app"
+         
+         # 创建备份
+         timestamp=$(date +%Y%m%d%H%M%S)
+         if [ -f docker-compose.prod.yml ]; then
+           cp docker-compose.prod.yml docker-compose.prod.yml.backup.$timestamp
+         fi
+         
+         # 创建环境变量文件（如果不存在）
+         if [ ! -f .env ]; then
+           echo "POSTGRES_DB=${POSTGRES_DB:-video_player}" > .env
+           echo "POSTGRES_USER=${POSTGRES_USER:-postgres}" >> .env
+           echo "POSTGRES_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+         fi
+         
+         # 登录 Docker Hub
+         echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+         
+         # 拉取最新镜像
+         docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
+         docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
+         docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
+         
+         # 启动服务
+         docker-compose -f docker-compose.prod.yml down
+         docker-compose -f docker-compose.prod.yml up -d
+         
+         # 检查健康状态
+         echo "等待服务启动..."
+         sleep 30
+         
+         # 执行健康检查
+         health_status=$(curl -s http://localhost/api/health || echo '{"status":"unhealthy"}')
+         if [[ $health_status == *"healthy"* ]]; then
+           echo "部署成功：服务健康状态正常"
+         else
+           echo "部署警告：健康检查失败，可能需要进一步调查"
+           echo "$health_status"
+           
+           # 错误处理（自动回滚）
+           if [ -f docker-compose.prod.yml.backup.$timestamp ]; then
+             echo "正在回滚到之前的配置..."
+             cp docker-compose.prod.yml.backup.$timestamp docker-compose.prod.yml
+             docker-compose -f docker-compose.prod.yml down
+             docker-compose -f docker-compose.prod.yml up -d
+           fi
+         fi
 
     # 步骤 6：通知部署结果
     - name: Notify deployment status
