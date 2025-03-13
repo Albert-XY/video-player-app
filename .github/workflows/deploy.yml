@@ -70,14 +70,14 @@ jobs:
           id
           
           # 检查目录是否存在
-          if [ ! -d "/video-player-app" ]; then
+          if [ ! -d "$HOME/video-player-app" ]; then
             echo "创建部署目录..."
-            sudo mkdir -p /video-player-app
-            sudo chown $(whoami):$(whoami) /video-player-app
+            sudo mkdir -p $HOME/video-player-app
+            sudo chown $(whoami):$(whoami) $HOME/video-player-app
           fi
           
           # 进入项目目录
-          cd /video-player-app
+          cd $HOME/video-player-app
           
           # 创建备份
           timestamp=$(date +%Y%m%d%H%M%S)
