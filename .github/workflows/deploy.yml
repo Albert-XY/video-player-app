@@ -78,7 +78,14 @@ jobs:
           
           # 进入项目目录
           cd $HOME/video-player-app
-          
+
+          # 检查是否是 Git 仓库
+          if [ ! -d "$HOME/video-player-app/.git" ]; then
+            echo "克隆 Git 仓库..."
+            git clone https://github.com/Albert-XY/video-player-app.git "$HOME/video-player-app"
+          fi
+          cd "$HOME/video-player-app"
+
           # 创建备份
           timestamp=$(date +%Y%m%d%H%M%S)
           if [ -f docker-compose.prod.yml ]; then
