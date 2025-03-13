@@ -72,8 +72,8 @@ jobs:
           # 检查目录是否存在
           if [ ! -d "/opt/video-player-app" ]; then
             echo "创建部署目录..."
-            sudo mkdir -p /opt/video-player-app
-            sudo chown $(whoami):$(whoami) /opt/video-player-app
+            mkdir -p /opt/video-player-app
+            chown $(whoami):$(whoami) /opt/video-player-app
           fi
           
           # 进入项目目录
