@@ -70,14 +70,14 @@ jobs:
           id
           
           # 检查目录是否存在
-          if [ ! -d "/opt/video-player-app" ]; then
+          if [ ! -d "/video-player-app" ]; then
             echo "创建部署目录..."
-            mkdir -p /opt/video-player-app
-            chown $(whoami):$(whoami) /opt/video-player-app
+            mkdir -p /video-player-app
+            chown $(whoami):$(whoami) /video-player-app
           fi
           
           # 进入项目目录
-          cd /opt/video-player-app
+          cd /video-player-app
           
           # 创建备份
           timestamp=$(date +%Y%m%d%H%M%S)
