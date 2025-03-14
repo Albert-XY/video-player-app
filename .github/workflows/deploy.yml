@@ -116,6 +116,11 @@ jobs:
          # 登录 Docker Hub
          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
          
+         # 配置 Docker 镜像加速器
+          echo '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+          
          # 拉取最新镜像
          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
