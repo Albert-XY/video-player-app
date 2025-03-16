@@ -8,110 +8,123 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-    - name: Configure Docker Registry Mirror
-      run: |
-        echo "配置 Docker 镜像加速器..."
-        echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S tee /etc/docker/daemon.json <<< '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}'
-        echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl daemon-reload
-        echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart docker
-        echo "Docker 镜像加速器已配置完成。"
+      - name: Configure Docker Registry Mirror
+        run: |
+          echo "配置 Docker 镜像加速器..."
+          echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S tee /etc/docker/daemon.json <<< '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}'
+          sudo systemctl daemon-reload
+          sudo systemctl restart docker
+          echo "Docker 镜像加速器已配置完成。"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Login to DockerHub
-      run: |
-        echo "尝试登录 DockerHub..."
-        echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-        echo "登录成功，验证 Docker 配置..."
-        cat ~/.docker/config.json
-        echo "Docker 配置文件加载完成。"
+      - name: Login to DockerHub
+        run: |
+          echo "尝试登录 DockerHub..."
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-    - name: Build and push Docker images
-      run: |
-        echo "开始构建和推送 Docker 镜像..."
-        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest -f Dockerfile.frontend .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest -f Dockerfile.backend .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest -f Dockerfile.nginx .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
-        echo "所有 Docker 镜像已成功构建并推送。"
+      - name: Build and push Docker images
+        run: |
+          export DOCKER_BUILDKIT=1
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest -f Dockerfile.frontend .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest
+          
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest -f Dockerfile.backend .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest
+          
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest -f Dockerfile.nginx .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest
 
-    - name: Deploy to Production Server
-      uses: appleboy/ssh-action@master
-      with:
-       host: ${{ secrets.SERVER_HOST }}
-       username: ${{ secrets.SERVER_USERNAME }}
-       password: ${{ secrets.SERVER_PASSWORD }}
-       port: 22
-       debug: true
-       timeout: 60s
-       command_timeout: 20m
-       script: |
-         echo "开始远程部署..."
-         whoami
-         id
-         if [ ! -d "$HOME/video-player-app" ]; then
-           echo "创建项目目录..."
-           echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S mkdir -p $HOME/video-player-app
-           echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S chown $(whoami):$(whoami) $HOME/video-player-app
-         fi
-         cd "$HOME/video-player-app"
-         timestamp=$(date +%Y%m%d%H%M%S)
-         if [ -f docker-compose.prod.yml ]; then
-           cp docker-compose.prod.yml docker-compose.prod.yml.backup.$timestamp
-         fi
-         if [ -d .git ]; then
-           git reset --hard origin/master
-           git pull origin master
-         else
-           rm -rf $HOME/video-player-app
-           git clone https://github.com/Albert-XY/video-player-app.git "$HOME/video-player-app"
-         fi
-         echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S tee /etc/docker/daemon.json <<< '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}'
-         echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl daemon-reload
-         echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart docker
-         echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo -S docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-         for i in {1..5}; do
-           echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:latest && break || sleep 10
-         done
-         for i in {1..5}; do
-           echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:latest && break || sleep 10
-         done
-         for i in {1..5}; do
-           echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:latest && break || sleep 10
-         done
-         echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker-compose -f docker-compose.prod.yml down
-         echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker-compose -f docker-compose.prod.yml up -d
-         sleep 30
-         health_status=$(curl -s http://localhost/api/health || echo '{"status":"unhealthy"}')
-         if [[ $health_status == *"healthy"* ]]; then
-           echo "部署成功：服务健康状态正常"
-         else
-           echo "部署警告：健康检查失败，可能需要进一步调查"
-           echo "$health_status"
-           if [ -f docker-compose.prod.yml.backup.$timestamp ]; then
-             echo "正在回滚到之前的配置..."
-             cp docker-compose.prod.yml.backup.$timestamp docker-compose.prod.yml
-             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker-compose -f docker-compose.prod.yml down
-             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker-compose -f docker-compose.prod.yml up -d
-           fi
-         fi
+      - name: Deploy to Production Server
+        uses: Appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            echo "---- 开始远程部署 ----"
+            whoami
+            id
 
-    - name: Notify deployment status
-      if: always()
-      run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "部署成功完成！"
-        else
-          echo "部署失败。请检查日志获取详细信息。"
-        fi
+            # 初始化目录
+            if [ ! -d "$HOME/video-player-app" ]; then
+              sudo mkdir -p $HOME/video-player-app
+              sudo chown -R $USER:$USER $HOME/video-player-app
+            fi
+
+            cd $HOME/video-player-app
+            timestamp=$(date +%Y%m%d%H%M%S)
+
+            # 备份现有配置
+            if [ -f docker-compose.prod.yml ]; then
+              cp docker-compose.prod.yml "docker-compose.prod.yml.backup.$timestamp"
+            fi
+
+            # 同步最新代码
+            if [ -d .git ]; then
+              git reset --hard origin/master
+              git pull origin master
+            else
+              git clone https://github.com/Albert-XY/video-player-app.git .
+            fi
+
+            # 配置 Docker 镜像加速
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S tee /etc/docker/daemon.json <<< '{"registry-mirrors": ["https://registry.cn-hangzhou.aliyuncs.com"]}'
+            sudo systemctl daemon-reload
+            sudo systemctl restart docker
+
+            # 登录 Docker
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo -S docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+            # 带重试的镜像拉取
+            for image in frontend backend nginx; do
+              for i in {1..5}; do
+                if sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:latest; then
+                  echo "成功拉取 $image 镜像"
+                  break
+                else
+                  echo "第 $i 次尝试拉取 $image 镜像失败，等待 10 秒..."
+                  sleep 10
+                fi
+                if [ $i -eq 5 ]; then exit 1; fi
+              done
+            done
+
+            # 执行部署
+            sudo docker-compose -f docker-compose.prod.yml down
+            sudo docker-compose -f docker-compose.prod.yml up -d
+
+            # 健康检查
+            sleep 20  # 延长等待时间
+            health_status=$(curl -s http://localhost/api/health || echo '{"status":"unhealthy"}')
+            
+            if [[ $health_status == *"healthy"* ]]; then
+              echo "::notice title=部署成功::服务健康状态正常"
+            else
+              echo "::error title=健康检查失败::服务响应：$health_status"
+              if [ -f "docker-compose.prod.yml.backup.$timestamp" ]; then
+                echo "正在回滚到备份版本..."
+                cp "docker-compose.prod.yml.backup.$timestamp" docker-compose.prod.yml
+                sudo docker-compose -f docker-compose.prod.yml down
+                sudo docker-compose -f docker-compose.prod.yml up -d
+              fi
+              exit 1
+            fi
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "::notice::生产环境部署成功完成 ✅"
+          else
+            echo "::error::生产环境部署失败 ❌"
+          fi
