@@ -15,14 +15,23 @@ jobs:
 
       - name: Configure Docker
         run: |
-          # 配置多个镜像源
+          # 配置多个镜像源和网络选项
           echo "{
             \"registry-mirrors\": [
               \"https://registry.cn-hangzhou.aliyuncs.com\",
               \"https://mirror.ccs.tencentyun.com\",
               \"https://hub-mirror.c.163.com\",
               \"https://docker.mirrors.ustc.edu.cn\"
-            ]
+            ],
+            \"max-concurrent-downloads\": 3,
+            \"max-concurrent-uploads\": 3,
+            \"mtu\": 1450,
+            \"dns\": [\"8.8.8.8\", \"8.8.4.4\"],
+            \"log-driver\": \"json-file\",
+            \"log-opts\": {
+              \"max-size\": \"100m\",
+              \"max-file\": \"3\"
+            }
           }" | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
@@ -36,14 +45,15 @@ jobs:
       - name: Build test images
         run: |
           export DOCKER_BUILDKIT=1
-          # 设置更长的超时时间
-          export DOCKER_CLIENT_TIMEOUT=120
-          export COMPOSE_HTTP_TIMEOUT=120
+          # 设置更长的超时时间和网络参数
+          export DOCKER_CLIENT_TIMEOUT=300
+          export COMPOSE_HTTP_TIMEOUT=300
+          export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
           
           # Build with test tag
-          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test -f Dockerfile.frontend .
-          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test -f Dockerfile.backend .
-          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test -f Dockerfile.nginx .
+          docker build --network=host --dns 8.8.8.8 --dns 8.8.4.4 -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test -f Dockerfile.frontend .
+          docker build --network=host --dns 8.8.8.8 --dns 8.8.4.4 -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test -f Dockerfile.backend .
+          docker build --network=host --dns 8.8.8.8 --dns 8.8.4.4 -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test -f Dockerfile.nginx .
           
           # Push test images
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
@@ -72,7 +82,11 @@ jobs:
           script: |
             set -e
 
-            # 配置 Docker 镜像源
+            # 配置系统 DNS
+            echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
+            echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+
+            # 配置 Docker 镜像源和网络选项
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S bash -c '
               mkdir -p /etc/docker
               echo "{
@@ -81,15 +95,28 @@ jobs:
                   \"https://mirror.ccs.tencentyun.com\",
                   \"https://hub-mirror.c.163.com\",
                   \"https://docker.mirrors.ustc.edu.cn\"
-                ]
+                ],
+                \"max-concurrent-downloads\": 3,
+                \"max-concurrent-uploads\": 3,
+                \"mtu\": 1450,
+                \"dns\": [\"8.8.8.8\", \"8.8.4.4\"],
+                \"log-driver\": \"json-file\",
+                \"log-opts\": {
+                  \"max-size\": \"100m\",
+                  \"max-file\": \"3\"
+                }
               }" > /etc/docker/daemon.json
+              
+              # 重启网络和 Docker 服务
+              systemctl restart NetworkManager
               systemctl daemon-reload
               systemctl restart docker
             '
 
-            # 设置 Docker 超时时间
-            export DOCKER_CLIENT_TIMEOUT=120
-            export COMPOSE_HTTP_TIMEOUT=120
+            # 设置 Docker 环境变量
+            export DOCKER_CLIENT_TIMEOUT=300
+            export COMPOSE_HTTP_TIMEOUT=300
+            export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
 
             # Create test directory
             mkdir -p $HOME/video-player-test
@@ -108,6 +135,9 @@ jobs:
                   - "3000:3000"
                 environment:
                   - NODE_ENV=test
+                dns:
+                  - 8.8.8.8
+                  - 8.8.4.4
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:3000"]
                   interval: 30s
@@ -120,6 +150,9 @@ jobs:
                   - "8000:8000"
                 environment:
                   - ENVIRONMENT=test
+                dns:
+                  - 8.8.8.8
+                  - 8.8.4.4
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
                   interval: 30s
@@ -130,6 +163,9 @@ jobs:
                 image: ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
                 ports:
                   - "80:80"
+                dns:
+                  - 8.8.8.8
+                  - 8.8.4.4
                 depends_on:
                   frontend:
                     condition: service_healthy
@@ -146,7 +182,7 @@ jobs:
               
               while [ $attempt -le $max_attempts ]; do
                 echo "尝试拉取 $image 镜像 (第 $attempt 次)"
-                if docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:test; then
+                if docker pull --dns 8.8.8.8 --dns 8.8.4.4 ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:test; then
                   echo "成功拉取 $image 镜像"
                   return 0
                 fi
@@ -163,6 +199,15 @@ jobs:
               done
             }
 
+            # 测试网络连接
+            echo "Testing network connectivity..."
+            ping -c 3 registry.hub.docker.com || true
+            ping -c 3 registry.cn-hangzhou.aliyuncs.com || true
+            
+            # 清理 Docker 缓存
+            echo "Cleaning Docker cache..."
+            docker system prune -f
+            
             # 拉取镜像
             pull_image frontend || exit 1
             pull_image backend || exit 1
