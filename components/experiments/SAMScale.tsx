@@ -7,9 +7,6 @@ interface SAMScaleProps {
   directSubmit?: boolean; // 是否直接提交到 API
 }
 
-// 导出S对象，确保它可以通过SAMScale.S访问
-export const S = { valence: 5, arousal: 5 };
-
 export default function SAMScale({ onSubmit, directSubmit = false }: SAMScaleProps) {
   const [valence, setValence] = useState<number>(5)
   const [arousal, setArousal] = useState<number>(5)

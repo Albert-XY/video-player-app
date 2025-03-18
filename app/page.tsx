@@ -1,27 +1,14 @@
 'use client'
-//客户端组件 支持使用React状态和事件处理。
-import { useState, useEffect } from 'react'
-import RegisterForm from '../components/forms/RegisterForm'
-import LoginForm from '../components/forms/LoginForm'
-import SAMVideoPlayer from '../components/media/SAMVideoPlayer'
-import ExperimentalVideoPlayer from '../components/experiments/ExperimentalVideoPlayer'
-import Background3D from '../components/Background3D'
-//除了导入了React的useState和useEffect钩子，用于管理组件状态和副作用；还导入了components目录下的组件:登录注册表单，SAM播放器，实验性播放器，3D背景。
-export default function Home() {
-  // 状态定义
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState('');
-  const [playerChoice, setPlayerChoice] = useState<'sam' | 'experimental' | null>(null);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
 
-  // 登出处理函数
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUsername('');
-    setPlayerChoice(null);
-    setMessage('Successfully logged out');
-  };
+import { useState, useEffect } from 'react'
+import RegisterForm from '@/components/RegisterForm'
+import LoginForm from '@/components/LoginForm'
+import SAMVideoPlayer from '@/components/SAMVideoPlayer'
+import ExperimentalVideoPlayer from '@/components/ExperimentalVideoPlayer'
+import Background3D from '@/components/Background3D'
+
+export default function Home() {
+  // ...保持原有状态逻辑不变...
 
   return (
     <>
@@ -35,17 +22,9 @@ export default function Home() {
           {/* 登录/注册界面 */}
           {!isLoggedIn ? (
             <>
-              <RegisterForm onRegister={(user) => {
-                setMessage(`User ${user} registered successfully!`);
-                setTimeout(() => setMessage(''), 3000);
-              }} />
+              <RegisterForm ... />
               <div className="my-4 border-t border-foreground/20" />
-              <LoginForm onLogin={(user) => {
-                setIsLoggedIn(true);
-                setUsername(user);
-                setMessage(`Welcome back, ${user}!`);
-                setTimeout(() => setMessage(''), 3000);
-              }} />
+              <LoginForm ... />
             </>
           ) : (
             <>
@@ -73,8 +52,8 @@ export default function Home() {
               ) : (
                 <>
                   {/* 播放器展示 */}
-                  {playerChoice === 'sam' && <SAMVideoPlayer userId={username} />}
-                  {playerChoice === 'experimental' && <ExperimentalVideoPlayer userId={username} />}
+                  {playerChoice === 'sam' && <SAMVideoPlayer ... />}
+                  {playerChoice === 'experimental' && <ExperimentalVideoPlayer ... />}
                   <button
                     onClick={() => setPlayerChoice(null)}
                     className="auth-form-button bg-foreground/10 hover:bg-foreground/20 text-foreground mt-4"

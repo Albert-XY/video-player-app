@@ -21,10 +21,6 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
-  webpack: (config) => {
-    config.resolve.fallback = { fs: false, path: false };
-    return config;
-  },
 }
 
 mergeConfig(nextConfig, userConfig)
@@ -34,19 +30,19 @@ function mergeConfig(nextConfig, userConfig) {
     return
   }
 
-  // merge the configs
-  Object.keys(userConfig).forEach((key) => {
-    if (key === 'webpack' && nextConfig.webpack) {
-      // special case for webpack
-      const originalWebpack = nextConfig.webpack
-      nextConfig.webpack = (config, options) => {
-        const newConfig = originalWebpack(config, options)
-        return userConfig.webpack(newConfig, options)
+  for (const key in userConfig) {
+    if (
+      typeof nextConfig[key] === 'object' &&
+      !Array.isArray(nextConfig[key])
+    ) {
+      nextConfig[key] = {
+        ...nextConfig[key],
+        ...userConfig[key],
       }
     } else {
       nextConfig[key] = userConfig[key]
     }
-  })
+  }
 }
 
 export default nextConfig

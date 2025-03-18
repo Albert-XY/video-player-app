@@ -12,8 +12,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 # 数据库路径
-DB_FILE = os.path.abspath('video_player.db')
-logger.info(f"使用数据库路径: {DB_FILE}")
+DB_FILE = 'video_player.db'
 
 # 允许跨域访问的装饰器
 def add_cors_headers(response):

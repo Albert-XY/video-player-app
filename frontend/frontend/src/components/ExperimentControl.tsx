@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import '../styles/theme.css';
 
 interface ExperimentControlProps {
   onExperimentStart: (participantId: string) => void;
@@ -9,11 +10,13 @@ interface ExperimentControlProps {
 
 export default function ExperimentControl({ onExperimentStart, experimentId }: ExperimentControlProps) {
   const [participantId, setParticipantId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!participantId.trim()) return;
 
+    setIsLoading(true);
     try {
       const response = await fetch('http://localhost:8080/api/experiments', {
         method: 'POST',
@@ -29,21 +32,27 @@ export default function ExperimentControl({ onExperimentStart, experimentId }: E
       }
     } catch (error) {
       console.error('Error starting experiment:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (experimentId) {
     return (
-      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-        实验进行中 - 参与者ID: {experimentId}
+      <div className="experiment-control-container page-transition">
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span className="text-green-500 font-medium">实验进行中</span>
+          <span className="text-gray-400">- 参与者ID: {experimentId}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="experiment-control-container page-transition space-y-6">
       <div>
-        <label htmlFor="participantId" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="participantId" className="block text-sm font-medium text-gray-300 mb-2">
           参与者ID
         </label>
         <input
@@ -51,16 +60,24 @@ export default function ExperimentControl({ onExperimentStart, experimentId }: E
           id="participantId"
           value={participantId}
           onChange={(e) => setParticipantId(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          className="input-field w-full"
           placeholder="请输入您的参与者ID"
           required
         />
       </div>
       <button
         type="submit"
-        className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        className="btn-primary w-full flex items-center justify-center"
+        disabled={isLoading}
       >
-        开始实验
+        {isLoading ? (
+          <>
+            <div className="loading-spinner mr-2" />
+            <span>正在启动实验...</span>
+          </>
+        ) : (
+          '开始实验'
+        )}
       </button>
     </form>
   );

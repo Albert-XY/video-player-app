@@ -1,4 +1,0 @@
-# 简单测试用Dockerfile
-FROM alpine:latest
-
-CMD ["echo", "构建成功!"]

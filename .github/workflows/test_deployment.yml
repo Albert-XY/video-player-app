@@ -13,15 +13,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Network Diagnostics
-        run: |
-          echo "Testing network connectivity..."
-          curl -v https://github.com || true
-          curl -v https://registry.hub.docker.com || true
-          ping -c 3 8.8.8.8 || true
-          traceroute github.com || true
-          traceroute registry.hub.docker.com || true
-
       - name: Configure Docker
         run: |
           # 配置多个镜像源和网络选项
@@ -35,19 +26,13 @@ jobs:
             \"max-concurrent-downloads\": 3,
             \"max-concurrent-uploads\": 3,
             \"mtu\": 1450,
-            \"dns\": [\"8.8.8.8\", \"8.8.4.4\", \"223.5.5.5\", \"223.6.6.6\"],
+            \"dns\": [\"8.8.8.8\", \"8.8.4.4\"],
             \"log-driver\": \"json-file\",
             \"log-opts\": {
               \"max-size\": \"100m\",
               \"max-file\": \"3\"
             }
           }" | sudo tee /etc/docker/daemon.json
-          
-          # 配置系统代理
-          export http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-          export https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-          export no_proxy=localhost,127.0.0.1
-          
           sudo systemctl restart docker
 
       - name: Set up Docker Buildx
@@ -61,8 +46,8 @@ jobs:
         run: |
           export DOCKER_BUILDKIT=1
           # 设置更长的超时时间和网络参数
-          export DOCKER_CLIENT_TIMEOUT=1200
-          export COMPOSE_HTTP_TIMEOUT=1200
+          export DOCKER_CLIENT_TIMEOUT=300
+          export COMPOSE_HTTP_TIMEOUT=300
           export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
           
           # Build with test tag
@@ -97,24 +82,9 @@ jobs:
           script: |
             set -e
 
-            # 网络诊断
-            echo "Running network diagnostics..."
-            curl -v https://github.com || true
-            curl -v https://registry.hub.docker.com || true
-            ping -c 3 8.8.8.8 || true
-            traceroute github.com || true
-            traceroute registry.hub.docker.com || true
-
             # 配置系统 DNS
-            echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+            echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
             echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-            echo "nameserver 223.5.5.5" | sudo tee -a /etc/resolv.conf
-            echo "nameserver 223.6.6.6" | sudo tee -a /etc/resolv.conf
-
-            # 配置系统代理
-            export http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-            export https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-            export no_proxy=localhost,127.0.0.1
 
             # 配置 Docker 镜像源和网络选项
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S bash -c '
@@ -129,7 +99,7 @@ jobs:
                 \"max-concurrent-downloads\": 3,
                 \"max-concurrent-uploads\": 3,
                 \"mtu\": 1450,
-                \"dns\": [\"8.8.8.8\", \"8.8.4.4\", \"223.5.5.5\", \"223.6.6.6\"],
+                \"dns\": [\"8.8.8.8\", \"8.8.4.4\"],
                 \"log-driver\": \"json-file\",
                 \"log-opts\": {
                   \"max-size\": \"100m\",
@@ -144,17 +114,15 @@ jobs:
             '
 
             # 设置 Docker 环境变量
-            export DOCKER_CLIENT_TIMEOUT=1200
-            export COMPOSE_HTTP_TIMEOUT=1200
+            export DOCKER_CLIENT_TIMEOUT=300
+            export COMPOSE_HTTP_TIMEOUT=300
             export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
 
             # Create test directory
             mkdir -p $HOME/video-player-test
             cd $HOME/video-player-test
 
-            # Clone repository with proxy
-            git config --global http.proxy http://registry.cn-hangzhou.aliyuncs.com
-            git config --global https.proxy http://registry.cn-hangzhou.aliyuncs.com
+            # Clone repository
             git clone --depth=1 https://github.com/Albert-XY/video-player-app.git .
 
             # Create test docker-compose file
@@ -167,14 +135,9 @@ jobs:
                   - "3000:3000"
                 environment:
                   - NODE_ENV=test
-                  - http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - no_proxy=localhost,127.0.0.1
                 dns:
                   - 8.8.8.8
                   - 8.8.4.4
-                  - 223.5.5.5
-                  - 223.6.6.6
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:3000"]
                   interval: 30s
@@ -187,14 +150,9 @@ jobs:
                   - "8000:8000"
                 environment:
                   - ENVIRONMENT=test
-                  - http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - no_proxy=localhost,127.0.0.1
                 dns:
                   - 8.8.8.8
                   - 8.8.4.4
-                  - 223.5.5.5
-                  - 223.6.6.6
                 healthcheck:
                   test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
                   interval: 30s
@@ -205,15 +163,9 @@ jobs:
                 image: ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
                 ports:
                   - "80:80"
-                environment:
-                  - http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  - no_proxy=localhost,127.0.0.1
                 dns:
                   - 8.8.8.8
                   - 8.8.4.4
-                  - 223.5.5.5
-                  - 223.6.6.6
                 depends_on:
                   frontend:
                     condition: service_healthy
@@ -225,7 +177,7 @@ jobs:
             pull_image() {
               local image=$1
               local max_attempts=5
-              local delay=10
+              local delay=5
               local attempt=1
               
               while [ $attempt -le $max_attempts ]; do
@@ -236,13 +188,6 @@ jobs:
                 fi
                 
                 if [ $attempt -eq $max_attempts ]; then
-                  echo "尝试使用代理拉取镜像..."
-                  export http_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  export https_proxy=http://registry.cn-hangzhou.aliyuncs.com
-                  if docker pull --dns 8.8.8.8 --dns 8.8.4.4 ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:test; then
-                    echo "通过代理成功拉取镜像"
-                    return 0
-                  fi
                   echo "拉取 $image 镜像失败，已达到最大重试次数"
                   return 1
                 fi
@@ -274,13 +219,13 @@ jobs:
 
             # Wait for services to be healthy
             echo "Waiting for services to be healthy..."
-            sleep 60
+            sleep 30
 
             # Test endpoints with retries
             test_endpoint() {
               local url=$1
               local max_attempts=5
-              local delay=10
+              local delay=5
               local attempt=1
               
               while [ $attempt -le $max_attempts ]; do

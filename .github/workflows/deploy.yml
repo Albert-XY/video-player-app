@@ -1,142 +1,108 @@
 name: Deploy to Production
 
+# 1、已经使用sudo visudo添加免密配置 2、创建回滚机制，在部署失败后自动回滚
+# 触发条件：当代码推送到 master 分支时触发
 on:
   push:
     branches:
       - master
 
 jobs:
+  # 阶段一：构建并推送 Docker 镜像
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    # 步骤 2：登录 DockerHub 容器注册表
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push images
+      env:
+        POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        MONGO_USER: ${{ secrets.MONGO_USER }}
+        MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+      run: |
+        docker-compose -f docker-compose.prod.yml build
+        docker-compose -f docker-compose.prod.yml push
+
+  # 阶段二：服务器部署（依赖构建阶段）
   deploy:
     runs-on: ubuntu-latest
-
+    needs: [build]  # 确保先完成镜像构建
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+    - uses: actions/checkout@v2
 
-      - name: Configure Docker
-        run: |
-          # 配置镜像加速器（无密码方式）
-          echo "{\"registry-mirrors\": [\"https://registry.cn-hangzhou.aliyuncs.com\"]}" | sudo tee /etc/docker/daemon.json
-          sudo systemctl restart docker
+    - name: Set up environment variables
+      run: |
+        echo "POSTGRES_HOST=db" >> $GITHUB_ENV
+        echo "POSTGRES_DB=videoeeg" >> $GITHUB_ENV
+        echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> $GITHUB_ENV
+        echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> $GITHUB_ENV
+        echo "MONGO_URI=mongodb://${{ secrets.MONGO_USER }}:${{ secrets.MONGO_PASSWORD }}@mongodb:27017" >> $GITHUB_ENV
+        echo "REDIS_HOST=redis" >> $GITHUB_ENV
+        echo "REDIS_PORT=6379" >> $GITHUB_ENV
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to DockerHub
-        run: |
-          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin <<< "${{ secrets.DOCKERHUB_TOKEN }}"
-
-      - name: Build and push images with retry
-        run: |
-          export DOCKER_BUILDKIT=1
-          retry_build() {
-            local image=$1
-            for i in {1..3}; do
-              docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:latest -f Dockerfile.$image . && docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:latest && return 0
-              echo "构建 $image 第 $i 次失败，等待 15 秒..."
-              sleep 15
-            done
+    - name: Deploy to CentOS 7 server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SERVER_SSH_KEY }}
+        script: |
+          set -e  # 任何步骤失败立即停止
+          DEPLOY_DIR="Xproject/EMOtestapp/video-player-app"
+          
+          # 定义回滚函数
+          rollback() {
+            echo "‼️ Deployment failed! Rolling back..."
+            cd $DEPLOY_DIR
+            docker-compose down  # 停止新容器
+            docker-compose up -d  # 尝试重新启动旧服务
             exit 1
           }
+          trap rollback ERR  # 捕获错误触发回滚
 
-          retry_build frontend
-          retry_build backend
-          retry_build nginx
+          # 开始部署
+          cd $DEPLOY_DIR
+          git fetch --all
+          git reset --hard origin/master
 
-      - name: Deploy to Production Server
-        uses: Appleboy/ssh-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          port: 22
-          script: |
-            set -e  # 任何命令失败立即退出
+          # 记录当前容器状态（用于回滚）
+          OLD_CONTAINERS=$(docker ps -aq)
 
-            # 配置环境
-            export GIT_SSL_NO_VERIFY=1
-            git config --global pull.rebase false
+          docker-compose pull  # 拉取最新镜像（来自构建阶段）
+          docker-compose up -d db mongodb redis
 
-            # 初始化目录（无sudo）
-            mkdir -p $HOME/video-player-app
-            cd $HOME/video-player-app
+          # 数据库健康检查（替代 sleep 30）
+          echo "🔍 Checking database readiness..."
+          timeout 60s bash -c 'until docker-compose exec db pg_isready; do sleep 2; done'
+          timeout 60s bash -c 'until nc -z mongodb 27017; do sleep 2; done'
+          timeout 60s bash -c 'until nc -z redis 6379; do sleep 2; done'
 
-            # 克隆/更新仓库（带重试）
-            for i in {1..5}; do
-              if [ -d .git ]; then
-                git fetch --all && git reset --hard origin/master && break
-              else
-                git clone --depth=1 https://github.com/Albert-XY/video-player-app.git . && break
-              fi
-              [[ $i -eq 5 ]] && exit 1
-              sleep 10
-            done
+          # 启动应用服务
+          docker-compose up -d app
 
-            # 配置Docker加速（使用root权限）
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S bash -c '
-              mkdir -p /etc/docker
-              echo "{\"registry-mirrors\": [\"https://registry.cn-hangzhou.aliyuncs.com\"]}" > /etc/docker/daemon.json
-              systemctl daemon-reload
-              systemctl restart docker
-            '
+          # 日志监控（检查应用是否正常启动）
+          sleep 10  # 给应用启动留出时间
+          if ! docker-compose logs app | grep -q "Application started"; then
+            echo "❌ App failed to start!"
+            exit 1
+          fi
 
-            # 带指数退避的镜像拉取
-            pull_image() {
-              local image=$1
-              local delay=5
-              for i in {1..5}; do
-                if sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:latest; then
-                  echo "成功拉取 $image 镜像"
-                  return 0
-                fi
-                echo "第 $i 次尝试拉取 $image 镜像失败，等待 ${delay}秒..."
-                sleep $delay
-                delay=$((delay * 2))
-              done
-              exit 1
-            }
+          # 清理旧容器
+          if [ -n "$OLD_CONTAINERS" ]; then
+            docker rm -f $OLD_CONTAINERS || true
+          fi
 
-            pull_image frontend
-            pull_image backend
-            pull_image nginx
+          # 防火墙配置（非交互式 sudo）
+          echo ${{ secrets.SUDO_PASSWORD }} | sudo -S firewall-cmd --permanent --add-port=8080/tcp
+          sudo firewall-cmd --reload
+          sudo systemctl restart docker
 
-            # 部署流程
-            sudo docker-compose -f docker-compose.prod.yml down --remove-orphans
-
-            # 健康检查函数
-            health_check() {
-              local attempts=0
-              while [ $attempts -lt 10 ]; do
-                if curl -fsS http://localhost/api/health | grep -q '"status":"healthy"'; then
-                  echo "健康检查通过"
-                  return 0
-                fi
-                attempts=$((attempts+1))
-                sleep 10
-              done
-              echo "健康检查失败"
-              return 1
-            }
-
-            # 启动并验证
-            if sudo docker-compose -f docker-compose.prod.yml up -d && health_check; then
-              echo "::notice title=部署成功::服务已正常启动 ✅"
-              # 清理旧备份（保留最近3个）
-              ls -t docker-compose.prod.yml.backup.* | tail -n +4 | xargs rm -f
-            else
-              echo "::error title=部署失败::正在尝试回滚..."
-              latest_backup=$(ls -t docker-compose.prod.yml.backup.* | head -1)
-              if [ -f "$latest_backup" ]; then
-                cp "$latest_backup" docker-compose.prod.yml
-                sudo docker-compose -f docker-compose.prod.yml down
-                sudo docker-compose -f docker-compose.prod.yml up -d
-              fi
-              exit 1
-            fi
-
-      - name: Deployment Notification
-        if: always()
-        run: |
-          echo "::notice::部署最终状态：${{ job.status }}"
+          echo "✅ Deployment successful!"

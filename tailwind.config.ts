@@ -10,10 +10,6 @@ const config: Config = {
   ],
   theme: {
   	extend: {
-      fontFamily: {
-        sans: ['var(--font-primary)'],
-        system: ['var(--font-system)'],
-      },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

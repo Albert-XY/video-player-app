@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- XML 声明：指定 XML 版本为 1.0，文件自身编码为 UTF-8 -->
+
+<project version="4">
+  <!-- 项目根元素，version 表示项目配置格式版本 -->
+
+  <component name="Encoding">
+    <!-- 编码配置组件：用于管理项目文件的字符编码设置 -->
+    
+    <file url="file://$PROJECT_DIR$/backend/src/main/java" charset="UTF-8" />
+    <!-- 
+      文件路径配置：
+      - url 属性指定了项目中的目录路径（使用 $PROJECT_DIR$ 变量表示项目根目录）
+      - charset 属性强制指定该目录下所有文件使用 UTF-8 编码格式
+      - 此配置会影响 IDE 对这些文件的读写处理方式（如编译、代码分析等）
+    -->
+  </component>
+</project>
+<!--1、确保 backend/src/main/java 目录下的所有 Java 源代码文件使用 UTF-8 编码
+
+2、防止因操作系统默认编码不同（如 Windows 的 GBK）导致的乱码问题
+
+3、统一团队协作时的编码规范，避免跨环境开发时的编码冲突-->

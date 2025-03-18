@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import '../styles/theme.css';
 
 interface VideoPlayerProps {
   video: {
@@ -17,6 +18,7 @@ export default function VideoPlayer({ video, experimentId, onVideoComplete }: Vi
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -28,6 +30,7 @@ export default function VideoPlayer({ video, experimentId, onVideoComplete }: Vi
 
     const handleLoadedMetadata = () => {
       setDuration(videoElement.duration);
+      setIsLoading(false);
     };
 
     const handleEnded = async () => {
@@ -72,7 +75,10 @@ export default function VideoPlayer({ video, experimentId, onVideoComplete }: Vi
   };
 
   return (
-    <div className="relative">
+    <div className="video-player-container page-transition">
+      {isLoading && (
+        <div className="loading-spinner" />
+      )}
       <video
         ref={videoRef}
         src={`http://localhost:8080/api/videos/${video.id}/stream`}
@@ -80,15 +86,15 @@ export default function VideoPlayer({ video, experimentId, onVideoComplete }: Vi
         controls
       />
       
-      <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-4">
+      <div className="absolute bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm text-white p-4">
         <div className="flex items-center justify-between">
           <button
             onClick={togglePlay}
-            className="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200"
+            className="btn-primary"
           >
             {isPlaying ? '暂停' : '播放'}
           </button>
-          <div>
+          <div className="text-sm font-medium">
             {formatTime(currentTime)} / {formatTime(duration)}
           </div>
         </div>
