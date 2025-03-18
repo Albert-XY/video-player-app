@@ -1,0 +1,150 @@
+name: Test Deployment Process
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  test-deployment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure Docker
+        run: |
+          echo "{\"registry-mirrors\": [\"https://registry.cn-hangzhou.aliyuncs.com\"]}" | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to DockerHub
+        run: |
+          docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin <<< "${{ secrets.DOCKERHUB_TOKEN }}"
+
+      - name: Build test images
+        run: |
+          export DOCKER_BUILDKIT=1
+          # Build with test tag
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test -f Dockerfile.frontend .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test -f Dockerfile.backend .
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test -f Dockerfile.nginx .
+          
+          # Push test images
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
+
+      - name: Test SSH Connection
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            echo "SSH connection test successful"
+            pwd
+            whoami
+
+      - name: Test Deployment
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            set -e
+
+            # Create test directory
+            mkdir -p $HOME/video-player-test
+            cd $HOME/video-player-test
+
+            # Clone repository
+            git clone --depth=1 https://github.com/Albert-XY/video-player-app.git .
+
+            # Create test docker-compose file
+            cat > docker-compose.test.yml << 'EOL'
+            version: '3.8'
+            services:
+              frontend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
+                ports:
+                  - "3000:3000"
+                environment:
+                  - NODE_ENV=test
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:3000"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+
+              backend:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test
+                ports:
+                  - "8000:8000"
+                environment:
+                  - ENVIRONMENT=test
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+
+              nginx:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
+                ports:
+                  - "80:80"
+                depends_on:
+                  frontend:
+                    condition: service_healthy
+                  backend:
+                    condition: service_healthy
+            EOL
+
+            # Pull test images
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
+
+            # Start test deployment
+            docker-compose -f docker-compose.test.yml down --remove-orphans
+            docker-compose -f docker-compose.test.yml up -d
+
+            # Wait for services to be healthy
+            echo "Waiting for services to be healthy..."
+            sleep 30
+
+            # Test endpoints
+            echo "Testing frontend..."
+            curl -f http://localhost:3000 || exit 1
+            
+            echo "Testing backend..."
+            curl -f http://localhost:8000/health || exit 1
+            
+            echo "Testing nginx..."
+            curl -f http://localhost || exit 1
+
+            echo "All tests passed successfully!"
+
+      - name: Cleanup Test Environment
+        if: always()
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          port: 22
+          script: |
+            cd $HOME/video-player-test
+            docker-compose -f docker-compose.test.yml down --remove-orphans
+            rm -rf $HOME/video-player-test
+
+      - name: Test Results
+        if: always()
+        run: |
+          echo "::notice::Test deployment completed with status: ${{ job.status }}" 
