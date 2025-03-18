@@ -15,7 +15,15 @@ jobs:
 
       - name: Configure Docker
         run: |
-          echo "{\"registry-mirrors\": [\"https://registry.cn-hangzhou.aliyuncs.com\"]}" | sudo tee /etc/docker/daemon.json
+          # 配置多个镜像源
+          echo "{
+            \"registry-mirrors\": [
+              \"https://registry.cn-hangzhou.aliyuncs.com\",
+              \"https://mirror.ccs.tencentyun.com\",
+              \"https://hub-mirror.c.163.com\",
+              \"https://docker.mirrors.ustc.edu.cn\"
+            ]
+          }" | sudo tee /etc/docker/daemon.json
           sudo systemctl restart docker
 
       - name: Set up Docker Buildx
@@ -28,10 +36,14 @@ jobs:
       - name: Build test images
         run: |
           export DOCKER_BUILDKIT=1
+          # 设置更长的超时时间
+          export DOCKER_CLIENT_TIMEOUT=120
+          export COMPOSE_HTTP_TIMEOUT=120
+          
           # Build with test tag
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test -f Dockerfile.frontend .
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test -f Dockerfile.backend .
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test -f Dockerfile.nginx .
+          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test -f Dockerfile.frontend .
+          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test -f Dockerfile.backend .
+          docker build --network=host -t ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test -f Dockerfile.nginx .
           
           # Push test images
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
@@ -59,6 +71,25 @@ jobs:
           port: 22
           script: |
             set -e
+
+            # 配置 Docker 镜像源
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S bash -c '
+              mkdir -p /etc/docker
+              echo "{
+                \"registry-mirrors\": [
+                  \"https://registry.cn-hangzhou.aliyuncs.com\",
+                  \"https://mirror.ccs.tencentyun.com\",
+                  \"https://hub-mirror.c.163.com\",
+                  \"https://docker.mirrors.ustc.edu.cn\"
+                ]
+              }" > /etc/docker/daemon.json
+              systemctl daemon-reload
+              systemctl restart docker
+            '
+
+            # 设置 Docker 超时时间
+            export DOCKER_CLIENT_TIMEOUT=120
+            export COMPOSE_HTTP_TIMEOUT=120
 
             # Create test directory
             mkdir -p $HOME/video-player-test
@@ -106,10 +137,36 @@ jobs:
                     condition: service_healthy
             EOL
 
-            # Pull test images
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-frontend:test
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-backend:test
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-nginx:test
+            # 带重试的镜像拉取函数
+            pull_image() {
+              local image=$1
+              local max_attempts=5
+              local delay=5
+              local attempt=1
+              
+              while [ $attempt -le $max_attempts ]; do
+                echo "尝试拉取 $image 镜像 (第 $attempt 次)"
+                if docker pull ${{ secrets.DOCKERHUB_USERNAME }}/video-player-$image:test; then
+                  echo "成功拉取 $image 镜像"
+                  return 0
+                fi
+                
+                if [ $attempt -eq $max_attempts ]; then
+                  echo "拉取 $image 镜像失败，已达到最大重试次数"
+                  return 1
+                fi
+                
+                echo "等待 ${delay} 秒后重试..."
+                sleep $delay
+                delay=$((delay * 2))
+                attempt=$((attempt + 1))
+              done
+            }
+
+            # 拉取镜像
+            pull_image frontend || exit 1
+            pull_image backend || exit 1
+            pull_image nginx || exit 1
 
             # Start test deployment
             docker-compose -f docker-compose.test.yml down --remove-orphans
@@ -119,15 +176,36 @@ jobs:
             echo "Waiting for services to be healthy..."
             sleep 30
 
-            # Test endpoints
-            echo "Testing frontend..."
-            curl -f http://localhost:3000 || exit 1
-            
-            echo "Testing backend..."
-            curl -f http://localhost:8000/health || exit 1
-            
-            echo "Testing nginx..."
-            curl -f http://localhost || exit 1
+            # Test endpoints with retries
+            test_endpoint() {
+              local url=$1
+              local max_attempts=5
+              local delay=5
+              local attempt=1
+              
+              while [ $attempt -le $max_attempts ]; do
+                echo "测试端点 $url (第 $attempt 次)"
+                if curl -f $url; then
+                  echo "端点 $url 测试成功"
+                  return 0
+                fi
+                
+                if [ $attempt -eq $max_attempts ]; then
+                  echo "端点 $url 测试失败，已达到最大重试次数"
+                  return 1
+                fi
+                
+                echo "等待 ${delay} 秒后重试..."
+                sleep $delay
+                delay=$((delay * 2))
+                attempt=$((attempt + 1))
+              done
+            }
+
+            # 测试所有端点
+            test_endpoint http://localhost:3000 || exit 1
+            test_endpoint http://localhost:8000/health || exit 1
+            test_endpoint http://localhost || exit 1
 
             echo "All tests passed successfully!"
 
