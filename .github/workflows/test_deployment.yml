@@ -61,8 +61,8 @@ jobs:
         run: |
           export DOCKER_BUILDKIT=1
           # 设置更长的超时时间和网络参数
-          export DOCKER_CLIENT_TIMEOUT=600
-          export COMPOSE_HTTP_TIMEOUT=600
+          export DOCKER_CLIENT_TIMEOUT=1200
+          export COMPOSE_HTTP_TIMEOUT=1200
           export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
           
           # Build with test tag
@@ -144,8 +144,8 @@ jobs:
             '
 
             # 设置 Docker 环境变量
-            export DOCKER_CLIENT_TIMEOUT=600
-            export COMPOSE_HTTP_TIMEOUT=600
+            export DOCKER_CLIENT_TIMEOUT=1200
+            export COMPOSE_HTTP_TIMEOUT=1200
             export DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
 
             # Create test directory
