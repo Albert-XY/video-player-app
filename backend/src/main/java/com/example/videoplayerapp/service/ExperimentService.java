@@ -1,13 +1,15 @@
 package com.example.videoplayerapp.service;
 
 import com.example.videoplayerapp.model.*;
+import com.example.videoplayerapp.repository.VideoEvaluationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.*;
@@ -16,6 +18,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 public class ExperimentService {
 
     @Autowired
@@ -23,6 +26,9 @@ public class ExperimentService {
     
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private VideoEvaluationRepository evaluationRepository;
 
     private static final String RVM_MODEL_PATH = "backend/ml/models/rvm_model.joblib";
     private static final String PYTHON_SCRIPT = "backend/ml/video_processor.py";
@@ -37,6 +43,7 @@ public class ExperimentService {
             file.transferTo(Paths.get(filePath));
             return filePath;
         } catch (IOException e) {
+            log.error("Failed to save EEG file", e);
             throw new RuntimeException("Failed to save file", e);
         }
     }
@@ -72,6 +79,7 @@ public class ExperimentService {
             result.put("predictedScore", predictedScore);
             
         } catch (Exception e) {
+            log.error("Failed to process experiment data", e);
             result.put("status", "error");
             result.put("message", "处理失败: " + e.getMessage());
         }
@@ -91,21 +99,23 @@ public class ExperimentService {
         ProcessBuilder pb = new ProcessBuilder(
             "python",
             PYTHON_SCRIPT,
-            "evaluate",
-            features,
-            RVM_MODEL_PATH
+            "--features", features,
+            "--model", RVM_MODEL_PATH
         );
         
         Process process = pb.start();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String output = reader.readLine();
-        
         int exitCode = process.waitFor();
+        
         if (exitCode != 0) {
-            throw new RuntimeException("RVM evaluation failed");
+            throw new RuntimeException("RVM评估失败");
         }
         
-        return Double.parseDouble(output);
+        // 读取Python脚本的输出
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
+            String output = reader.readLine();
+            return Double.parseDouble(output);
+        }
     }
 
     @Transactional
@@ -144,53 +154,30 @@ public class ExperimentService {
         Map<String, Object> result = new HashMap<>();
         
         try {
-            // 1. 使用RVM模型进行初筛
-            ProcessBuilder pb = new ProcessBuilder(
-                "python",
-                PYTHON_SCRIPT,
-                "predict",
-                videoPath
-            );
-            
-            Process process = pb.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            
-            // 读取Python输出
-            boolean passed = Boolean.parseBoolean(reader.readLine().split(": ")[1]);
-            double valence = Double.parseDouble(reader.readLine().split(": ")[1]);
-            double arousal = Double.parseDouble(reader.readLine().split(": ")[1]);
-            double squareSum = Double.parseDouble(reader.readLine().split(": ")[1]);
-            
-            if (!passed || squareSum <= SQUARE_SUM_THRESHOLD) {
-                result.put("status", "rejected");
-                result.put("message", "视频未通过初筛");
+            // 1. 检查待处理视频数量
+            Query countQuery = entityManager.createQuery("SELECT COUNT(p) FROM PendingVideo p");
+            Long count = (Long) countQuery.getSingleResult();
+            if (count >= MAX_PENDING_VIDEOS) {
+                result.put("status", "error");
+                result.put("message", "待处理视频数量已达到上限");
                 return result;
             }
             
-            // 2. 检查待处理视频数量
-            Long pendingCount = (Long) entityManager.createQuery(
-                "SELECT COUNT(v) FROM PendingVideo v")
-                .getSingleResult();
-                
-            if (pendingCount >= MAX_PENDING_VIDEOS) {
-                result.put("status", "rejected");
-                result.put("message", "待处理视频数量已达上限");
-                return result;
-            }
-            
-            // 3. 添加到待处理数据库
+            // 2. 创建待处理视频记录
             PendingVideo pendingVideo = new PendingVideo();
             pendingVideo.setPath(videoPath);
-            pendingVideo.setValence(valence);
-            pendingVideo.setArousal(arousal);
+            pendingVideo.setValence(0.0);  // 初始值
+            pendingVideo.setArousal(0.0);  // 初始值
             pendingVideo.setUploadTime(LocalDateTime.now());
             
             entityManager.persist(pendingVideo);
             
             result.put("status", "success");
-            result.put("message", "视频已添加到待处理列表");
+            result.put("message", "视频已添加到待处理队列");
+            result.put("pendingVideoId", pendingVideo.getId());
             
         } catch (Exception e) {
+            log.error("Failed to process new video", e);
             result.put("status", "error");
             result.put("message", "处理失败: " + e.getMessage());
         }
@@ -211,56 +198,48 @@ public class ExperimentService {
                 return result;
             }
             
-            // 2. 计算RVM和SAM评分的方差
-            double valenceVariance = Math.pow(pendingVideo.getValence() - samValence, 2);
-            double arousalVariance = Math.pow(pendingVideo.getArousal() - samArousal, 2);
+            // 2. 创建新的视频记录
+            Video video = new Video(
+                pendingVideo.getPath(),
+                "新视频 " + pendingVideoId,
+                pendingVideo.getValence(),
+                pendingVideo.getArousal()
+            );
             
-            if (valenceVariance > VARIANCE_THRESHOLD || arousalVariance > VARIANCE_THRESHOLD) {
-                // 方差过大，删除待处理视频
-                entityManager.remove(pendingVideo);
-                result.put("status", "rejected");
-                result.put("message", "RVM和SAM评分差异过大");
-                return result;
-            }
+            // 3. 设置视频属性
+            video.setLabel(calculateLabel(pendingVideo.getValence(), pendingVideo.getArousal()));
+            video.setValence(pendingVideo.getValence());
+            video.setArousal(pendingVideo.getArousal());
             
-            // 3. 添加到正式视频库
-            Video video = new Video();
-            video.setPath(pendingVideo.getPath());
-            // 使用SAM评分的平均值作为最终评分
-            double finalValence = (pendingVideo.getValence() + samValence) / 2;
-            double finalArousal = (pendingVideo.getArousal() + samArousal) / 2;
-            
-            // 根据最终评分确定视频类别
-            String label;
-            if (finalValence >= 5 && finalArousal >= 5) {
-                label = "HAHV";
-            } else if (finalValence >= 5 && finalArousal < 5) {
-                label = "HALV";
-            } else if (finalValence < 5 && finalArousal >= 5) {
-                label = "LAHV";
-            } else {
-                label = "LALV";
-            }
-            
-            video.setLabel(label);
-            video.setValence(finalValence);
-            video.setArousal(finalArousal);
-            
+            // 4. 保存视频
             entityManager.persist(video);
             
-            // 4. 删除待处理视频
+            // 5. 删除待处理视频
             entityManager.remove(pendingVideo);
             
             result.put("status", "success");
-            result.put("message", "视频已添加到正式库");
-            result.put("label", label);
+            result.put("message", "视频评估完成");
+            result.put("videoId", video.getId());
             
         } catch (Exception e) {
+            log.error("Failed to process SAM evaluation", e);
             result.put("status", "error");
             result.put("message", "处理失败: " + e.getMessage());
         }
         
         return result;
+    }
+    
+    private String calculateLabel(double valence, double arousal) {
+        if (valence >= 5 && arousal >= 5) {
+            return "HAHV";
+        } else if (valence >= 5 && arousal < 5) {
+            return "HALV";
+        } else if (valence < 5 && arousal >= 5) {
+            return "LAHV";
+        } else {
+            return "LALV";
+        }
     }
     
     @Transactional
@@ -298,6 +277,53 @@ public class ExperimentService {
             result.put("message", "训练过程发生异常");
             result.put("error", e.getMessage());
         }
+        return result;
+    }
+    
+    public Map<String, Object> runCrossValidation(String dataPath) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 1. 准备数据
+            List<VideoEvaluation> evaluations = evaluationRepository.findAll();
+            if (evaluations.isEmpty()) {
+                result.put("status", "error");
+                result.put("message", "没有足够的评估数据");
+                return result;
+            }
+            
+            // 2. 调用Python脚本进行交叉验证
+            ProcessBuilder pb = new ProcessBuilder(
+                "python",
+                PYTHON_SCRIPT,
+                "--mode", "cross_validation",
+                "--data", dataPath
+            );
+            
+            Process process = pb.start();
+            int exitCode = process.waitFor();
+            
+            if (exitCode != 0) {
+                result.put("status", "error");
+                result.put("message", "交叉验证失败");
+                return result;
+            }
+            
+            // 3. 读取结果
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()))) {
+                String output = reader.readLine();
+                result.put("status", "success");
+                result.put("message", "交叉验证完成");
+                result.put("results", output);
+            }
+            
+        } catch (Exception e) {
+            log.error("Failed to run cross validation", e);
+            result.put("status", "error");
+            result.put("message", "交叉验证失败: " + e.getMessage());
+        }
+        
         return result;
     }
 }

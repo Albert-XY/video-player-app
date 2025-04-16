@@ -1,11 +1,12 @@
 package com.example.videoplayerapp.model;
 
 import lombok.Data;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Table(name = "experiment_videos")
 public class ExperimentVideo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

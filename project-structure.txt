@@ -1,48 +1,72 @@
 /video-player-app
 ├── app/
 │   ├── api/
-│   │   ├── login/
+│   │   ├── auth/
+│   │   │   ├── login/
+│   │   │   │   └── route.ts
+│   │   │   └── register/
+│   │   │       └── route.ts
+│   │   ├── experiments/
 │   │   │   └── route.ts
-│   │   ├── register/
-│   │   │   └── route.ts
-│   │   ├── videos/
-│   │   │   └── route.ts
-│   │   └── record-video-time/
+│   │   └── videos/
 │   │       └── route.ts
+│   ├── routes/
+│   │   ├── experiments/
+│   │   │   └── page.tsx
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   └── register/
+│   │       └── page.tsx
+│   ├── globals.css
 │   ├── layout.tsx
-│   ├── page.tsx
-│   └── globals.css
+│   └── page.tsx
 ├── components/
-│   ├── Background3D.tsx
-│   ├── LoginForm.tsx
-│   ├── RegisterForm.tsx
-│   └── VideoPlayer.tsx
+│   ├── experiments/
+│   │   └── ExperimentComponent.tsx
+│   ├── forms/
+│   │   ├── LoginForm.tsx
+│   │   └── RegisterForm.tsx
+│   ├── media/
+│   │   └── VideoPlayer.tsx
+│   └── ui/
+│       └── Background3D.tsx
 ├── lib/
 │   ├── db.ts
+│   ├── sqlite_db.ts
 │   └── utils.ts
+├── python/
+│   ├── api/
+│   │   └── api.py
+│   ├── database/
+│   │   └── database.py
+│   ├── features/
+│   │   └── feature_extraction.py
+│   ├── server/
+│   │   └── server.py
+│   ├── tests/
+│   │   └── test.py
+│   └── video_scraper/
+│       ├── video_scraper/
+│       │   ├── spiders/
+│       │   │   └── video_spider.py
+│       │   ├── __init__.py
+│       │   ├── items.py
+│       │   ├── middlewares.py
+│       │   ├── pipelines.py
+│       │   └── settings.py
+│       └── scrapy.cfg
+├── docker/
+│   ├── app.Dockerfile
+│   ├── audio_feature_extraction.Dockerfile
+│   ├── video_feature_extraction.Dockerfile
+│   └── docker-compose.yml
 ├── public/
 │   └── videos/
-├── styles/
-│   └── VideoPlayer.css
-├── types/
-│   └── index.ts
-├── python/
-│   ├── video_scraper/
-│   │   ├── video_scraper/
-│   │   │   ├── spiders/
-│   │   │   │   └── video_spider.py
-│   │   │   ├── __init__.py
-│   │   │   ├── items.py
-│   │   │   ├── middlewares.py
-│   │   │   ├── pipelines.py
-│   │   │   └── settings.py
-│   │   └── scrapy.cfg
-│   ├── video_processor.py
-│   └── video_pipeline.py
+├── archived/
+│   ├── css/
+│   ├── frontend/
+│   └── vue_components/
+├── .env
 ├── .env.local
-├── .env.production
-├── next.config.js
-├── package.json
-├── tsconfig.json
-└── README.md
-
+├── next.config.mjs
+└── package.json

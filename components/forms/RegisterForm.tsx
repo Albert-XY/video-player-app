@@ -2,25 +2,40 @@
 
 import { useState } from 'react'
 import { handleFetchError } from '@/lib/utils'
+import { AUTH_ENDPOINTS } from '@/lib/config'
 
 interface RegisterFormProps {
-  setMessage: (message: string) => void
-  setError: (error: string) => void
-  onRegister: (username: string) => void
+  onSuccess: () => void
 }
 
-export default function RegisterForm({ setMessage, setError, onRegister }: RegisterFormProps) {
+export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   const validateForm = () => {
+    if (!username || !email || !password || !confirmPassword || !fullName) {
+      setError('请填写所有必填项')
+      return false
+    }
     if (username.length < 3) {
-      setError('Username must be at least 3 characters long')
+      setError('用户名至少需要3个字符')
       return false
     }
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long')
+      setError('密码至少需要6个字符')
+      return false
+    }
+    if (password !== confirmPassword) {
+      setError('两次输入的密码不一致')
+      return false
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('请输入有效的邮箱地址')
       return false
     }
     return true
@@ -29,26 +44,53 @@ export default function RegisterForm({ setMessage, setError, onRegister }: Regis
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setMessage('')
 
     if (!validateForm()) return
 
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/register', {
+      const response = await fetch(AUTH_ENDPOINTS.register, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ 
+          username, 
+          password,
+          email,
+          fullName
+        }),
       })
 
-      const data = await handleFetchError(response)
-      setMessage(data.message)
-      onRegister(username)
+      if (!response.ok) {
+        let errorMessage = '注册失败';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          console.error('解析响应失败:', parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      try {
+        const data = await response.json();
+        console.log('注册成功:', data);
+        // 可以在这里处理返回的数据
+      } catch (parseError) {
+        console.log('响应解析失败，但注册状态视为成功');
+      }
+
+      onSuccess()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred')
+      setError(error instanceof Error ? error.message : '发生未知错误')
     } finally {
       setIsLoading(false)
     }
@@ -56,39 +98,76 @@ export default function RegisterForm({ setMessage, setError, onRegister }: Regis
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-2xl font-semibold mb-4 text-center text-indigo-600">Register</h2>
+      <h2 className="auth-title">注册新账号</h2>
+      
+      {error && (
+        <div className="error-message">{error}</div>
+      )}
+
       <div>
-        <label htmlFor="register-username" className="block text-sm font-medium text-gray-700">Username</label>
         <input
-          id="register-username"
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="auth-input"
+          placeholder="用户名"
           required
           minLength={3}
         />
       </div>
+
       <div>
-        <label htmlFor="register-password" className="block text-sm font-medium text-gray-700">Password</label>
         <input
-          id="register-password"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="auth-input"
+          placeholder="邮箱"
+          required
+        />
+      </div>
+
+      <div>
+        <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="auth-input"
+          placeholder="密码"
           required
           minLength={6}
         />
       </div>
+
+      <div>
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className="auth-input"
+          placeholder="确认密码"
+          required
+        />
+      </div>
+
+      <div>
+        <input
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          className="auth-input"
+          placeholder="姓名"
+          required
+        />
+      </div>
+
       <button 
         type="submit" 
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        className="auth-button"
         disabled={isLoading}
       >
-        {isLoading ? 'Registering...' : 'Register'}
+        {isLoading ? '注册中...' : '注册'}
       </button>
     </form>
   )
 }
-

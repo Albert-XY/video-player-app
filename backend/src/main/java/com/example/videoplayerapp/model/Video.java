@@ -1,11 +1,14 @@
 package com.example.videoplayerapp.model;
 
 import lombok.Data;
-import javax.persistence.*;
+import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "videos")
 @Data
+@NoArgsConstructor
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,8 +26,6 @@ public class Video {
     
     @Version
     private Long version;  // 用于乐观锁
-    
-    public Video() {}
     
     public Video(String path, String title, double valence, double arousal) {
         this.path = path;
@@ -54,4 +55,20 @@ public class Video {
         this.arousal = arousal;
         this.label = calculateLabel();
     }
+    
+    // 添加缺失字段
+    @Column(name = "experimental")
+    private boolean experimental;
+    
+    @Column(name = "category")
+    private String category;
+    
+    @Column(name = "valence_score")
+    private double valenceScore;
+    
+    @Column(name = "arousal_score")
+    private double arousalScore;
+    
+    // 生成对应的getter/setter方法
+    // [用IDE自动生成所有字段的getter/setter]
 }

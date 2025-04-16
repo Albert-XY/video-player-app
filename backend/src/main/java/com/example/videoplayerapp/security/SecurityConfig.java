@@ -2,7 +2,7 @@ package com.example.videoplayerapp.security;
 
 import com.example.videoplayerapp.security.jwt.JwtAuthenticationFilter;
 import com.example.videoplayerapp.security.jwt.JwtTokenUtil;
-import com.example.videoplayerapp.service.UserDetailsServiceImpl;
+import com.example.videoplayerapp.service.MockUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,7 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final JwtTokenUtil jwtTokenUtil;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final MockUserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -41,6 +41,8 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/login", "/api/register", "/api/health").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll() // 前端实际使用的认证路径
                 .requestMatchers(HttpMethod.GET, "/api/videos/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/experiments/**").permitAll()
                 .anyRequest().authenticated()

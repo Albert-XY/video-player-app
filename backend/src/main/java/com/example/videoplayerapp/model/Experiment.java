@@ -1,12 +1,11 @@
 package com.example.videoplayerapp.model;
 
-import lombok.Data;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Data
+@Table(name = "experiments")
 public class Experiment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -15,6 +14,7 @@ public class Experiment {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private String eegFileUrl;
+    private LocalDateTime createdAt;
     
     @OneToMany(mappedBy = "experiment", cascade = CascadeType.ALL)
     private List<ExperimentVideo> experimentVideos;

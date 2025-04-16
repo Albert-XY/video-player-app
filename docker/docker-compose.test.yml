@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  frontend-test:
+    build:
+      context: ..
+      dockerfile: docker/test.Dockerfile
+      target: frontend-test
+    volumes:
+      - ../:/app
+      - /app/node_modules
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080
+    command: npm run test:docker
+    networks:
+      - test-network
+
+  backend-test:
+    build:
+      context: ..
+      dockerfile: docker/test.Dockerfile
+      target: backend-test
+    volumes:
+      - ../backend:/app/backend
+      - /app/backend/target
+    command: mvn test
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

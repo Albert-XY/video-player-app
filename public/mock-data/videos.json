@@ -1,0 +1,163 @@
+{
+  "videos": [
+    {
+      "id": 1,
+      "title": "初学者Python教程 (1)",
+      "description": "本视频详细介绍了Python的基础知识，适合初学者。",
+      "url": "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
+      "thumbnail": "https://via.placeholder.com/320x180?text=Python+Tutorial",
+      "duration": 300,
+      "views": 1250,
+      "rating": 4.5,
+      "userId": 1,
+      "categoryId": 1,
+      "createdAt": "2025-03-10T08:00:00Z",
+      "updatedAt": "2025-04-09T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "title": "高级JavaScript技巧 (2)",
+      "description": "深入探讨JavaScript的高级应用，提供实用技巧。",
+      "url": "https://samplelib.com/lib/preview/mp4/sample-10s.mp4",
+      "thumbnail": "https://via.placeholder.com/320x180?text=JavaScript+Advanced",
+      "duration": 450,
+      "views": 780,
+      "rating": 4.2,
+      "userId": 1,
+      "categoryId": 1,
+      "createdAt": "2025-03-15T09:00:00Z",
+      "updatedAt": "2025-04-09T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "title": "React框架入门到精通 (3)",
+      "description": "全面讲解React的核心概念和实际应用场景。",
+      "url": "https://samplelib.com/lib/preview/mp4/sample-15s.mp4",
+      "thumbnail": "https://via.placeholder.com/320x180?text=React+Tutorial",
+      "duration": 600,
+      "views": 2100,
+      "rating": 4.7,
+      "userId": 4,
+      "categoryId": 1,
+      "createdAt": "2025-03-20T10:00:00Z",
+      "updatedAt": "2025-04-09T08:00:00Z"
+    },
+    {
+      "id": 4,
+      "title": "Vue.js实战项目开发 (4)",
+      "description": "通过实际项目演示Vue.js的开发流程和最佳实践。",
+      "url": "https://samplelib.com/lib/preview/mp4/sample-20s.mp4",
+      "thumbnail": "https://via.placeholder.com/320x180?text=Vue+Projects",
+      "duration": 750,
+      "views": 1800,
+      "rating": 4.3,
+      "userId": 4,
+      "categoryId": 1,
+      "createdAt": "2025-03-25T11:00:00Z",
+      "updatedAt": "2025-04-09T08:00:00Z"
+    },
+    {
+      "id": 5,
+      "title": "数据结构与算法 (5)",
+      "description": "数据结构完整教程，从入门到精通的学习路径。",
+      "url": "https://samplelib.com/lib/preview/mp4/sample-30s.mp4",
+      "thumbnail": "https://via.placeholder.com/320x180?text=Data+Structures",
+      "duration": 900,
+      "views": 3200,
+      "rating": 4.8,
+      "userId": 1,
+      "categoryId": 1,
+      "createdAt": "2025-03-30T12:00:00Z",
+      "updatedAt": "2025-04-09T08:00:00Z"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@example.com",
+      "fullName": "管理员",
+      "isAdmin": true
+    },
+    {
+      "id": 2,
+      "username": "user1",
+      "email": "user1@example.com",
+      "fullName": "测试用户1",
+      "isAdmin": false
+    },
+    {
+      "id": 3,
+      "username": "user2",
+      "email": "user2@example.com",
+      "fullName": "测试用户2",
+      "isAdmin": false
+    },
+    {
+      "id": 4,
+      "username": "videomaker",
+      "email": "creator@example.com",
+      "fullName": "视频创作者",
+      "isAdmin": false
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "教育",
+      "description": "教育类视频"
+    },
+    {
+      "id": 2,
+      "name": "娱乐",
+      "description": "娱乐类视频"
+    },
+    {
+      "id": 3,
+      "name": "音乐",
+      "description": "音乐类视频"
+    },
+    {
+      "id": 4,
+      "name": "科技",
+      "description": "科技类视频"
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "content": "很棒的视频，学到了很多！",
+      "userId": 2,
+      "videoId": 1,
+      "createdAt": "2025-03-11T08:30:00Z"
+    },
+    {
+      "id": 2,
+      "content": "讲解非常清晰，谢谢分享。",
+      "userId": 3,
+      "videoId": 1,
+      "createdAt": "2025-03-12T09:15:00Z"
+    },
+    {
+      "id": 3,
+      "content": "内容有点深奥，希望能有更详细的解释。",
+      "userId": 2,
+      "videoId": 2,
+      "createdAt": "2025-03-16T10:20:00Z"
+    },
+    {
+      "id": 4,
+      "content": "这个主题很有意思，期待更多相关内容。",
+      "userId": 3,
+      "videoId": 3,
+      "createdAt": "2025-03-21T11:25:00Z"
+    },
+    {
+      "id": 5,
+      "content": "视频质量很高，音质也不错。",
+      "userId": 2,
+      "videoId": 4,
+      "createdAt": "2025-03-26T12:30:00Z"
+    }
+  ]
+}

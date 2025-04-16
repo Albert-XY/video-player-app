@@ -1,22 +1,31 @@
 'use client'
 
 import { useState } from 'react'
+import { AUTH_ENDPOINTS } from '@/lib/config'
 
 interface LoginFormProps {
-  onLogin: (username: string) => void
+  onSuccess: () => void
 }
 
-export default function LoginForm({ onLogin }: LoginFormProps) {
+export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
 
+    if (!username || !password) {
+      setError('请输入用户名和密码')
+      return
+    }
+
+    setIsLoading(true)
+
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch(AUTH_ENDPOINTS.login, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,49 +34,75 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       })
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Login failed')
+        let errorMessage = '登录失败';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } else {
+            const text = await response.text();
+            errorMessage = text || errorMessage;
+          }
+        } catch (parseError) {
+          console.error('解析响应失败:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
-      onLogin(username)
+      try {
+        const data = await response.json();
+        console.log('登录成功:', data);
+        // 可以在这里处理返回的数据，例如保存token等
+      } catch (parseError) {
+        console.log('响应解析失败，但登录状态视为成功');
+      }
+
+      onSuccess()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred')
+      setError(error instanceof Error ? error.message : '发生未知错误')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-2xl font-semibold mb-4 text-center text-indigo-600">Login</h2>
-      {error && <p className="text-red-500">{error}</p>}
+      <h2 className="auth-title">登录账号</h2>
+
+      {error && (
+        <div className="error-message">{error}</div>
+      )}
+
       <div>
-        <label htmlFor="login-username" className="block text-sm font-medium text-gray-700">Username</label>
         <input
-          id="login-username"
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="auth-input"
+          placeholder="用户名"
           required
         />
       </div>
+
       <div>
-        <label htmlFor="login-password" className="block text-sm font-medium text-gray-700">Password</label>
         <input
-          id="login-password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          className="auth-input"
+          placeholder="密码"
           required
         />
       </div>
+
       <button 
         type="submit" 
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        className="auth-button"
+        disabled={isLoading}
       >
-        Login
+        {isLoading ? '登录中...' : '登录'}
       </button>
     </form>
   )
 }
-
