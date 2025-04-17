@@ -14,7 +14,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    # 步骤 2：登录 DockerHub 容器注册表
+    # 步骤 2：安装 Docker Compose
+    - name: Install Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
+
+    # 步骤 3：登录 DockerHub 容器注册表
     - name: Login to DockerHub
       uses: docker/login-action@v2
       with:
