@@ -3,9 +3,10 @@
 
 # Stage 1: Build the frontend (Next.js/React)
 FROM node:18 as frontend-build
+ENV npm_config_legacy_peer_deps=true
 WORKDIR /app/frontend
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 

@@ -3,7 +3,7 @@ FROM node:14 as frontend-build
 WORKDIR /app/frontend
 RUN npm config set registry https://registry.npmmirror.com/
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 RUN chmod +x ./node_modules/.bin/webpack
 RUN ls -l ./node_modules/.bin/webpack
 COPY frontend/ ./
