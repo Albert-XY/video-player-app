@@ -46,8 +46,8 @@ class VideoControllerTest {
         );
         
         when(videoService.getRandomVideos(5)).thenReturn(mockVideos);
-        
-        mockMvc.perform(get("/api/videos"))
+
+        mockMvc.perform(get("/api/videos/random"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$", hasSize(5)));
     }
@@ -64,8 +64,16 @@ class VideoControllerTest {
     @Test
     @org.springframework.security.test.context.support.WithMockUser(username = "testuser", roles = {"USER"})
     void shouldAllowAuthorizedAccess() throws Exception {
+        // mock service 层返回数据，避免500
+        List<Video> approvedVideos = Arrays.asList(
+            createMockVideo(1L, "测试视频1"),
+            createMockVideo(2L, "测试视频2")
+        );
+        when(videoService.getApprovedVideos()).thenReturn(approvedVideos);
+
         mockMvc.perform(get("/api/videos/approved"))
-            .andExpect(status().isOk());
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(2)));
     }
     
     // 创建模拟视频对象的辅助方法
