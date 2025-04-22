@@ -1,6 +1,6 @@
 # 视频播放器应用
 
-一个集成了用户认证、视频管理和交互式实验功能的全栈视频播放器应用。
+一个集成了用户认证、视频管理和交互式实验功能的全栈视频播放器应用。本应用支持完整的视频播放、评价和实验管理功能，使用真实数据库存储而非仅依赖示例数据。
 
 ## 项目结构
 
@@ -100,29 +100,29 @@ video-player-app/
   - **videos/**: 管理视频资源，包括获取、评分、上传
   - **experiments/**: 处理实验相关数据提交
 - **routes/**：页面路由
-  - **experiments/**: 包含SAM评估、常规实验和任务实验页面
+  - **experiments/**: 各类实验界面
   - **login/**: 用户登录页面
-  - **register/**: 用户注册页面
+  - **register/**: 新用户注册页面
 
-#### 1.2 Components（React组件）
-- **experiments/**: 实验相关组件，包括实验控制、管理、数据统计等
-- **forms/**: 表单相关组件，包括登录、注册、问卷等
-- **media/**: 媒体播放组件，包括视频播放器和SAM评估界面
-- **ui/**: 通用UI组件，包括按钮、输入框、模态框等
+#### 1.2 Components组件库
+- **experiments/**: 实验相关组件
+- **forms/**: 各类表单组件
+- **media/**: 媒体播放组件
+- **ui/**: 可重用界面组件
 
-#### 1.3 工具库
-- **hooks/**: React自定义钩子，如useAuth处理认证状态
-- **lib/**: 通用工具函数库，包含数据处理、API调用等功能
-- **types/**: TypeScript类型定义
+#### 1.3 Hooks钩子
+- **useAuth.ts**: 认证钩子，管理登录状态和用户信息
+
+#### 1.4 Lib工具库
+- **db.ts**: 数据库连接与查询工具
+- **utils.ts**: 通用工具函数，如错误处理、日期格式化等
 
 ### 2. 后端架构
 
 #### 2.1 Python后端
-- **database/**: 数据库模块，处理SQLite操作
-- **feature_extraction/**: 视频和音频特征提取
-- **video_scraper/**: 视频内容爬取工具
-- **test_api_server.py**: 测试API服务器
-- **sqlite_db.py**: SQLite数据库管理
+- **database/**: 数据库操作模块
+- **feature_extraction/**: 视频特征提取
+- **video_scraper/**: 视频爬取模块
 
 #### 2.2 Java后端
 - **controller/**: REST控制器，处理HTTP请求
@@ -138,37 +138,31 @@ video-player-app/
 
 ## API接口
 
-### 1. 认证相关
+### 视频API
 
-#### 1.1 登录
-- **路径**: `/api/auth/login`
-- **方法**: POST
-- **请求体**: `{ username: string, password: string }`
-- **响应**: `{ success: boolean, userId: number, username: string }`
+#### 获取推荐视频
+- **请求**: `GET /api/videos`
+- **响应**: `[{id, title, src, valence, arousal}]`
 
-#### 1.2 注册
-- **路径**: `/api/auth/register`
-- **方法**: POST
-- **请求体**: `{ username: string, password: string, email: string, fullName: string }`
-- **响应**: `{ success: boolean, message: string }`
+#### 获取未评分视频
+- **请求**: `GET /api/videos/unrated`
+- **响应**: `[{id, title, src}]`
 
-### 2. 视频相关
+#### 提交视频评分
+- **请求**: `POST /api/videos/ratings`
+- **请求体**: `{videoId, rating, userId}`
+- **响应**: `{success: boolean}`
 
-#### 2.1 获取未评分视频
-- **路径**: `/api/videos/unrated`
-- **方法**: GET
-- **查询参数**: `userId`
-- **响应**: `Array<{ id: string, title: string, src: string }>`
+### 实验API
 
-#### 2.2 获取已批准视频
-- **路径**: `/api/videos/approved`
-- **方法**: GET
-- **响应**: `Array<{ id: string, title: string, src: string, valence: number, arousal: number }>`
+#### 加入实验
+- **请求**: `POST /api/experiments/join`
+- **请求体**: `{userId, experimentType}`
+- **响应**: `{experimentId, videos: [{id, title, src}]}`
 
-#### 2.3 提交视频评分
-- **路径**: `/api/experiments/sam`
-- **方法**: POST
-- **请求体**: `{ userId: number, videoId: string, valence: number, arousal: number }`
+#### 提交实验结果
+- **请求**: `POST /api/experiments/{experimentId}/submit`
+- **请求体**: `{results: [{videoId, valence, arousal}]}`
 - **响应**: `{ success: boolean }`
 
 ## 实验功能
@@ -188,38 +182,31 @@ video-player-app/
 1. 安装Node.js依赖
    ```bash
    npm install
-   # 或者使用pnpm
-   pnpm install
    ```
 
-2. 启动Next.js前端服务
+2. 启动开发服务器
    ```bash
    npm run dev
-   # 或者使用pnpm
-   pnpm dev
    ```
-   前端服务将在 http://localhost:3000 启动
 
-## 项目维护记录
+3. 访问 http://localhost:3000
 
-### 2025-04-17 项目优化更新
+### Java后端启动
+1. 进入后端目录
+   ```bash
+   cd backend
+   ```
 
-#### 1. Git仓库清理
-- 移除了大型二进制文件（JAR和TAR归档文件）
-- 优化了`.gitignore`配置，防止大型二进制文件再次被提交
-- 清理了Git历史，减小了仓库体积
+2. 使用Maven启动
+   ```bash
+   .\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+   ```
 
-#### 2. Java后端测试修复
-- 修复了`TestDataGenerator.java`包名不匹配问题
-- 重构了测试数据生成器，使其与当前项目结构兼容
-- 移除了对不存在仓库接口的引用（CategoryRepository, CommentRepository等）
-- 简化了测试数据生成逻辑，保留核心功能
+3. 后端API将在 http://localhost:8080/api 上可用
 
-#### 3. 持续集成改进
-- 修复了GitHub Actions中的Java编译错误
-- 确保CI/CD流程可以正常执行
-
-#### 4. 项目结构优化
+- 重构了项目结构，提高了代码组织性
+- 优化了视频播放器组件，提供了更好的用户体验
+- 改进了实验数据收集和分析功能
 - 统一了包名结构，确保一致性
 - 调整了测试目录结构，与主代码结构保持一致
 
@@ -227,7 +214,7 @@ video-player-app/
 1. 创建并激活Python虚拟环境
    ```bash
    python -m venv .venv
-   .\.venv\Scripts\activate
+   .\\.venv\\Scripts\\activate
    ```
 
 2. 安装Python依赖
@@ -245,42 +232,76 @@ video-player-app/
    ```bash
    python test_api_server.py
    ```
-   Python后端将在 http://localhost:5000 启动
 
-### Java后端启动（可选）
-1. 确保安装了JDK 17或更高版本和Maven
-
-2. 编译并启动Spring Boot应用
+### 本地环境整合启动
+使用PowerShell脚本一键启动整个环境:
    ```bash
-   cd backend
-   .\mvnw.cmd spring-boot:run
+   .\启动本地测试环境.ps1
    ```
-   Java后端将在 http://localhost:8080 启动
 
-### 使用Docker启动完整环境（可选）
-如果您安装了Docker和Docker Compose，可以一键启动完整环境：
+## 系统架构
 
-```bash
-cd docker
-docker-compose up
-```
+### 技术栈
 
-这将启动前端、后端和数据库服务，并通过Nginx整合所有服务。
+- **前端**: Next.js 14, React 18, TypeScript, Tailwind CSS
+- **后端**: Java Spring Boot 3, Python API
+- **数据库**: PostgreSQL 13+, MongoDB 4.4+, Redis 6+
+- **爬虫框架**: Scrapy 2.8+
+- **情绪评估**: SAM量表评分系统
+- **容器化**: Docker, Docker Compose
+- **测试**: Vitest, JUnit, pytest
 
-## 本地环境要求
+### 系统组件
 
-- **Node.js**: 18.x或更高版本
-- **Python**: 3.8或更高版本
-- **JDK**: 17或更高版本（仅Java后端需要）
-- **Docker**: 最新版本（可选，用于容器化部署）
+本系统已经经过全面重构，包含以下关键组件，所有组件均可在服务器环境中稳定运行：
 
-## 最近更新
+1. **前端应用** (Next.js):
+   - 统一了技术栈，移除了Vue.js组件
+   - 采用功能分类组织组件：experiments/, forms/, media/, ui/
+   - 合并了重复的工具函数库
 
-- 项目结构优化，移除冗余文件和目录
-- 统一所有样式到app/globals.css
-- 整合所有Docker配置到docker目录
-- 清理大型二进制文件，减小项目体积
-- 更新文档和运行说明
+2. **视频播放器系统**:
+   - SAM量表视频评价播放器
+   - 实验范式视频播放器
+   - 基于情绪参数的视频分类自动化
+
+3. **后端系统**:
+   - Java Spring Boot API
+   - Python Flask 服务
+   - 视频爬虫系统
+
+4. **数据存储架构**:
+   - PostgreSQL: 主要应用数据
+   - MongoDB: 爬虫采集的原始视频数据
+   - Redis: 缓存和会话管理
+
+### 服务器兴容性
+
+本系统已通过全面重构，确保可在服务器环境中稳定运行：
+
+- **已测试操作系统**: Ubuntu 20.04/22.04, CentOS 8+, Debian 11+
+- **系统要求**: 
+  - CPU: 至少2核心 (4核心或以上推荐)
+  - 内存: 至少4GB (运行全部服务建议8GB或以上)
+  - 磁盘空间: 至少20GB (视频存储根据需求可能需要更多)
+
+所有服务已通过Docker容器化，可以在任何支持Docker的环境中运行。
+
+### 架构优化
+
+最新版本进行了以下架构优化:
+
+- 统一了前端技术栈，完全基于Next.js框架
+- 优化了组件结构，按功能分类组织
+- 合并了重复的工具函数，提高代码复用
+- 规范了API接口设计，遵循RESTful原则
+- 移动Python文件到python/目录，提高目录结构清晰度
+- 增强了视频播放器功能，支持更多交互方式
+- 增添了SAM量表评分系统和视频自动爬虫
+- 完善了实验数据收集和分析功能
+- 加强了安全性，实现了完整的JWT认证
+- 优化了Docker配置，便于容器化部署
+- 改进了测试架构，提高测试覆盖率
 - 添加完整的测试环境配置和示例
 - 修复VideoPlayer组件测试和JwtTokenUtil测试问题
 - 添加简化测试配置用于隔离测试特定组件
@@ -452,3 +473,201 @@ public class YourServiceTest {
         // 添加测试逻辑和断言
     }
 }
+```
+
+## 部署指南
+
+本项目支持完整的生产环境部署，确保所有功能使用真实数据库而非示例数据。包括视频浏览、SAM量表评价、实验范式播放器和自动爬虫视频采集等完整功能。以下是详细的部署步骤：
+
+### 准备工作
+
+1. 确保服务器已安装：
+   - Docker 和 Docker Compose (生产部署必需)
+   - PostgreSQL 13+ (存储用户和视频元数据)
+   - Redis 6+ (缓存和会话管理)
+   - MongoDB 4.4+ (爬虫采集的原始视频数据存储)
+   - 足够的磁盘空间（建议最少20GB，视频存储需要大量空间）
+   - 快速的网络连接（特别是如果要爬取高清视频）
+   - Node.js 18+（仅用于本地开发）
+
+2. 克隆代码库：
+   ```bash
+   git clone https://github.com/your-username/video-player-app.git
+   cd video-player-app
+   ```
+
+### 数据库配置
+
+1. 在生产环境中，使用以下命令创建并初始化PostgreSQL数据库：
+   ```bash
+   # 创建数据库
+   sudo -u postgres createdb video_player_db
+   
+   # 导入表结构（可选，应用也会自动创建表结构）
+   # sudo -u postgres psql -d video_player_db -f database/schema.sql
+   ```
+
+2. 请注意，项目已配置为：
+   - 禁用模拟服务模式 (`app.mock-service.enabled=false`)
+   - 要求数据库连接 (`spring.datasource.continue-on-error=false`)
+
+### 部署应用
+
+#### 使用Docker部署（推荐）
+
+1. 配置环境变量（强烈建议）：
+   创建或编辑 `.env` 文件设置以下变量：
+   ```
+   # 数据库配置
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=your_secure_password
+   
+   # MongoDB配置
+   MONGO_USER=admin
+   MONGO_PASSWORD=your_secure_mongo_password
+   
+   # 视频设置
+   VIDEO_STORAGE_PATH=/data/videos    # 视频文件存储路径
+   
+   # SAM评分系统设置
+   MAX_UNRATED_VIDEOS=40              # 未评分视频数量上限
+   MIN_RATINGS_PER_VIDEO=16           # 每个视频所需的评分数
+   ```
+
+2. 使用Docker Compose启动应用：
+   ```bash
+   # 生产环境部署
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+3. 验证应用状态：
+   ```bash
+   docker-compose -f docker-compose.prod.yml ps
+   curl http://localhost:8080/api/health-check
+   ```
+
+#### 不使用Docker的手动部署
+
+1. 后端部署：
+   ```bash
+   # 进入backend目录
+   cd backend
+   
+   # 使用Maven构建
+   ./mvnw clean package -DskipTests
+   
+   # 运行JAR文件
+   java -jar target/video-player-app-0.0.1-SNAPSHOT.jar
+   ```
+
+2. 前端部署：
+   ```bash
+   # 安装依赖
+   npm install
+   
+   # 构建前端
+   npm run build
+   
+   # 启动前端服务
+   npm start
+   ```
+
+### 生产环境访问
+
+- 后端API: http://your-server-ip:8080/api
+- 前端应用: http://your-server-ip:3000
+- MongoDB数据库: mongodb://your-server-ip:27017
+
+### 注意事项
+
+1. **数据库连接**：确保数据库已正确配置且可访问。系统现在已禁用所有模拟数据，必须使用真实数据库连接。
+   - PostgreSQL：用于用户账户、视频元数据和合格视频存储
+   - MongoDB：用于爬虫采集的原始视频数据存储
+
+2. **环境变量**：生产环境下请为以下关键变量设置安全值：
+   - `POSTGRES_PASSWORD`：数据库密码
+   - `JWT_SECRET`：用于身份验证的密钥
+   - `MONGO_PASSWORD`：MongoDB密码（用于爬虫数据存储）
+   - `SPRING_PROFILES_ACTIVE`：设置为`prod`确保生产环境配置
+   - `APP_MOCK_SERVICE_ENABLED`：设置为`false`确保使用真实数据库
+
+3. **初始数据**：首次部署时可能需要创建管理员账户：
+   ```sql
+   INSERT INTO users (username, email, password, full_name, is_admin, is_active) 
+   VALUES ('admin', 'admin@example.com', '$2a$10$X7VYCcwTwLzWGP.vC4qwnOeUFVUn8/fmpyD5jBUDTgNJULOqNZZm2', '管理员', true, true);
+   ```
+   (密码为`admin123`，建议部署后立即修改)
+
+4. **视频存储**：确保视频文件存储路径正确配置且有足够空间：
+   - `VIDEO_STORAGE_PATH`：视频文件存储路径（建议最少10GB空间）
+   - 确保存储路径可读写且有足够权限
+
+5. **SAM评分系统**：系统现在使用两个独立表分别存储：
+   - `videos`表：仅存储未评分视频（最外40个）
+   - `approved_videos`表：存储所有通过SAM评分筛选的合格视频（用于实验范式播放器）
+   - 每个视频需要至16人评分后才会进行评估
+   
+   - 对于方差小于0.06且平均值明显偏离中性的视频才会被保留
+
+### 爬虫服务部署
+
+项目包含一个基于Scrapy的视频爬虫服务，用于自动采集视频数据。以下是部署和运行爬虫的步骤：
+
+#### 1. 自动部署（使用Docker）
+
+在使用`docker-compose.prod.yml`启动服务时，爬虫服务会自动部署。它将作为一个单独的服务运行，并将数据存储在MongoDB中。
+
+```bash
+# 启动所有服务，包括爬虫
+$ docker-compose -f docker-compose.prod.yml up -d
+```
+
+#### 2. 手动运行爬虫（服务器上）
+
+如果需要手动运行爬虫，可以执行以下命令：
+
+```bash
+# 进入爬虫容器
+$ docker exec -it video-player-app_spider_1 /bin/bash
+
+# 在容器内运行爬虫
+$ python run_spider.py --mongo-uri mongodb://mongodb:27017 --mongo-db video_db
+```
+
+#### 3. 定时运行爬虫
+
+在服务器上设置定时任务，定期运行爬虫：
+
+```bash
+# 执行以下命令添加crontab任务（每天6点运行）
+$ crontab -e
+
+# 添加以下行
+0 6 * * * docker exec video-player-app_spider_1 python run_spider.py --mongo-uri mongodb://mongodb:27017 --mongo-db video_db >> /var/log/video_spider.log 2>&1
+```
+
+#### 4. 爬虫数据同步到PostgreSQL
+
+爬虫采集的数据默认存储在MongoDB中，通过以下命令可以同步数据到PostgreSQL数据库：
+
+```bash
+# 进入爬虫容器
+$ docker exec -it video-player-app_spider_1 /bin/bash
+
+# 运行数据同步脚本
+$ python sync_to_postgres.py
+```
+
+#### 5. 爬虫日志和监控
+
+爬虫日志位于容器内的`/app/video_spider.log`，可以通过以下命令查看：
+
+```bash
+$ docker exec video-player-app_spider_1 cat /app/video_spider.log
+```
+
+如果需要实时监控爬虫运行状态：
+
+```bash
+$ docker exec video-player-app_spider_1 tail -f /app/video_spider.log
+```

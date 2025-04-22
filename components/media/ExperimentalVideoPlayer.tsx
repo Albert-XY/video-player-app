@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react'
 import { handleFetchError } from '@/lib/utils'
 
 interface Video {
-  id: string
+  id: number
   title: string
   src: string
-  valence: number
-  arousal: number
+  sam_valence_avg: number
+  sam_arousal_avg: number
 }
 
 interface ExperimentalVideoPlayerProps {
@@ -112,8 +112,8 @@ export default function ExperimentalVideoPlayer({ username, userId }: Experiment
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">{currentVideo.title}</h3>
         <div className="text-sm text-gray-600">
-          <span>Valence: {currentVideo.valence.toFixed(2)}</span>
-          <span className="ml-2">Arousal: {currentVideo.arousal.toFixed(2)}</span>
+          <span>效价(Valence): {currentVideo.sam_valence_avg?.toFixed(2) || '未知'}</span>
+          <span className="ml-2">唤醒度(Arousal): {currentVideo.sam_arousal_avg?.toFixed(2) || '未知'}</span>
         </div>
       </div>
     </div>

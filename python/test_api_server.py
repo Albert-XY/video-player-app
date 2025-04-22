@@ -3,8 +3,13 @@ import sqlite3
 import logging
 import os
 import random
+import json
+import shutil
+from datetime import datetime
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, 
@@ -65,10 +70,12 @@ def get_videos():
             SELECT id, title, src 
             FROM videos 
             WHERE 
-                (rating_count IS NULL OR rating_count < 16 OR is_approved IS NULL OR is_approved = 0)
+                (rating_count IS NULL OR rating_count < ?) AND
+                (is_deleted = 0 OR is_deleted IS NULL) AND
+                (is_approved IS NULL OR is_approved = 0)
             ORDER BY RANDOM() 
             LIMIT 10
-        ''')
+        ''', (SAM_RATING_CONFIG['MIN_RATINGS_PER_VIDEO'],))
         videos = [dict(row) for row in cursor.fetchall()]
         cursor.close()
         conn.close()
@@ -146,8 +153,9 @@ def submit_sam_rating():
         cursor.execute('SELECT rating_count FROM videos WHERE id = ?', (videoId,))
         video = cursor.fetchone()
         
-        # 如果达到16个评分，进行SAM评估
-        if video and video['rating_count'] >= 16:
+        # 如果达到配置的最少评分数，进行SAM评估
+        min_ratings = SAM_RATING_CONFIG['MIN_RATINGS_PER_VIDEO']
+        if video and video['rating_count'] >= min_ratings:
             logger.info(f"视频 {videoId} 已收集到 {video['rating_count']} 个评分，开始SAM评估")
             
             # 计算平均SAM评分和方差
@@ -171,22 +179,67 @@ def submit_sam_rating():
                 
                 isApproved = (
                     # 情感明确性检查：效价或唤醒度至少有一个明确偏离中性
-                    (valence_deviation > 0.2 or arousal_deviation > 0.2) and
+                    (valence_deviation > SAM_RATING_CONFIG['VALENCE_DEVIATION_THRESHOLD'] or 
+                     arousal_deviation > SAM_RATING_CONFIG['AROUSAL_DEVIATION_THRESHOLD']) and
                     # 评分者意见一致性检查：方差小于阈值
-                    avgRatings['var_valence'] < 0.06 and avgRatings['var_arousal'] < 0.06
+                    avgRatings['var_valence'] < SAM_RATING_CONFIG['VALENCE_VARIANCE_THRESHOLD'] and 
+                    avgRatings['var_arousal'] < SAM_RATING_CONFIG['AROUSAL_VARIANCE_THRESHOLD']
                 )
                 
-                # 更新视频批准状态
-                cursor.execute(
-                    'UPDATE videos SET is_approved = ?, sam_valence_avg = ?, sam_arousal_avg = ? WHERE id = ?',
-                    (1 if isApproved else 0, avgRatings['avg_valence'], avgRatings['avg_arousal'], videoId)
-                )
+                # 获取视频文件路径
+                cursor.execute('SELECT title, src FROM videos WHERE id = ?', (videoId,))
+                video_data = cursor.fetchone()
                 
                 logger.info(f"视频 {videoId} SAM评估结果: " + 
                            f"平均效价={avgRatings['avg_valence']:.4f} (偏离={valence_deviation:.4f}), " +
                            f"平均唤醒度={avgRatings['avg_arousal']:.4f} (偏离={arousal_deviation:.4f}), " + 
                            f"效价方差={avgRatings['var_valence']:.4f}, 唤醒度方差={avgRatings['var_arousal']:.4f}, " +
                            f"审核结果={'通过' if isApproved else '拒绝'}")
+                
+                if video_data and video_data['src']:
+                    # 构建完整的文件路径
+                    video_path = os.path.join(os.getcwd(), video_data['src'].lstrip('/'))
+                    
+                    # 如果视频通过审核，复制到合格视频表
+                    if isApproved:
+                        try:
+                            # 将合格视频插入到approved_videos表
+                            cursor.execute('''
+                                INSERT INTO approved_videos 
+                                (title, src, sam_valence_avg, sam_arousal_avg, rating_count, original_video_id) 
+                                VALUES (?, ?, ?, ?, ?, ?)
+                            ''', (
+                                video_data['title'], 
+                                video_data['src'], 
+                                avgRatings['avg_valence'], 
+                                avgRatings['avg_arousal'], 
+                                avgRatings['rating_count'],
+                                videoId
+                            ))
+                            
+                            logger.info(f"视频 {videoId} 已移入合格视频表")
+                        except Exception as e:
+                            logger.error(f"移动视频到合格表时出错: {str(e)}")
+                    else:
+                        # 如果视频未通过审核，删除视频文件
+                        try:
+                            if os.path.exists(video_path):
+                                logger.info(f"删除未通过审核的视频文件: {video_path}")
+                                os.remove(video_path)
+                        except Exception as e:
+                            logger.error(f"删除视频文件时出错: {str(e)}")
+                    
+                    # 无论是否通过审核，都从原始表中删除视频和评分
+                    try:
+                        # 清理相关评分数据
+                        cursor.execute('DELETE FROM user_ratings WHERE video_id = ?', (videoId,))
+                        
+                        # 从原始表中删除视频
+                        cursor.execute('DELETE FROM videos WHERE id = ?', (videoId,))
+                        
+                        logger.info(f"视频 {videoId} 已从原始表中删除")
+                    except Exception as e:
+                        logger.error(f"从原始表删除视频时出错: {str(e)}")
         
         conn.commit()
         cursor.close()
@@ -210,6 +263,119 @@ def submit_sam_rating():
         return add_cors_headers(response)
 
 # 获取视频统计信息
+@app.route('/api/unrated-videos', methods=['GET'])
+def get_unrated_videos():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 首先检查未评分视频总数
+        cursor.execute('''
+            SELECT COUNT(*) as count 
+            FROM videos 
+            WHERE 
+                (rating_count IS NULL OR rating_count < ?) AND
+                (is_deleted = 0 OR is_deleted IS NULL) AND
+                (is_approved IS NULL OR is_approved = 0)
+        ''', (SAM_RATING_CONFIG['MIN_RATINGS_PER_VIDEO'],))
+        
+        result = cursor.fetchone()
+        unrated_count = result['count'] if result else 0
+        
+        # 检查是否超过配置的最大未评分视频数量
+        max_unrated = SAM_RATING_CONFIG['MAX_UNRATED_VIDEOS']
+        logger.info(f"当前未评分视频数量: {unrated_count}/{max_unrated}")
+        
+        # 获取未评分视频列表
+        cursor.execute('''
+            SELECT id, title, src 
+            FROM videos 
+            WHERE 
+                (rating_count IS NULL OR rating_count < ?) AND
+                (is_deleted = 0 OR is_deleted IS NULL) AND
+                (is_approved IS NULL OR is_approved = 0)
+            ORDER BY RANDOM() 
+            LIMIT 10
+        ''', (SAM_RATING_CONFIG['MIN_RATINGS_PER_VIDEO'],))
+        
+        videos = [dict(row) for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        
+        response = jsonify(videos)
+        return add_cors_headers(response)
+    except Exception as e:
+        logger.error(f"获取未评分视频列表出错: {str(e)}")
+        response = jsonify({"error": "获取未评分视频列表失败"})
+        response.status_code = 500
+        return add_cors_headers(response)
+
+# 获取实验范式播放器的合格视频
+@app.route('/api/approved-videos', methods=['GET'])
+def get_approved_videos():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 获取符合条件并已过审核的视频列表
+        cursor.execute('''
+            SELECT id, title, src, sam_valence_avg, sam_arousal_avg 
+            FROM approved_videos 
+            ORDER BY RANDOM() 
+            LIMIT 20
+        ''')
+        
+        videos = [dict(row) for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        
+        logger.info(f"返回{len(videos)}个合格视频给实验范式播放器")
+        response = jsonify(videos)
+        return add_cors_headers(response)
+    except Exception as e:
+        logger.error(f"获取合格视频列表出错: {str(e)}")
+        response = jsonify({"error": "获取合格视频列表失败"})
+        response.status_code = 500
+        return add_cors_headers(response)
+
+# 根据条件获取特定情绪类型的合格视频
+@app.route('/api/approved-videos/filter', methods=['GET'])
+def get_filtered_approved_videos():
+    try:
+        # 获取查询参数
+        min_valence = request.args.get('min_valence', default=0, type=float)
+        max_valence = request.args.get('max_valence', default=1, type=float)
+        min_arousal = request.args.get('min_arousal', default=0, type=float)
+        max_arousal = request.args.get('max_arousal', default=1, type=float)
+        limit = request.args.get('limit', default=10, type=int)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 根据效价和唤醒度范围筛选视频
+        cursor.execute('''
+            SELECT id, title, src, sam_valence_avg, sam_arousal_avg 
+            FROM approved_videos 
+            WHERE 
+                sam_valence_avg BETWEEN ? AND ? AND
+                sam_arousal_avg BETWEEN ? AND ?
+            ORDER BY RANDOM() 
+            LIMIT ?
+        ''', (min_valence, max_valence, min_arousal, max_arousal, limit))
+        
+        videos = [dict(row) for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        
+        logger.info(f"返回{len(videos)}个符合情绪过滤条件的合格视频")
+        response = jsonify(videos)
+        return add_cors_headers(response)
+    except Exception as e:
+        logger.error(f"获取筛选视频列表出错: {str(e)}")
+        response = jsonify({"error": "获取筛选视频列表失败"})
+        response.status_code = 500
+        return add_cors_headers(response)
+
 @app.route('/api/video-stats', methods=['GET'])
 def get_video_stats():
     try:

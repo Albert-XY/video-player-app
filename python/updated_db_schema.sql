@@ -34,6 +34,7 @@ CREATE TABLE videos (
     sam_arousal_avg FLOAT,
     rating_count INTEGER DEFAULT 0,
     is_approved BOOLEAN DEFAULT FALSE,
+    is_deleted BOOLEAN DEFAULT FALSE,
     upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     uploader VARCHAR(100) DEFAULT 'system',
     view_count INTEGER DEFAULT 0,
@@ -51,12 +52,30 @@ CREATE TABLE user_ratings (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 创建合格视频表，用于实验范式播放器
+CREATE TABLE approved_videos (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    src VARCHAR(512) NOT NULL,
+    sam_valence_avg FLOAT NOT NULL,
+    sam_arousal_avg FLOAT NOT NULL,
+    rating_count INTEGER NOT NULL,
+    original_video_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 创建索引
 CREATE INDEX idx_videos_valence_arousal ON videos (rvm_valence, rvm_arousal);
 CREATE INDEX idx_videos_upload_date ON videos (upload_date);
 CREATE INDEX idx_videos_rating_count ON videos (rating_count);
 CREATE INDEX idx_videos_is_approved ON videos (is_approved);
+CREATE INDEX idx_videos_is_deleted ON videos (is_deleted);
+
 CREATE INDEX idx_user_ratings_video_id ON user_ratings (video_id);
+CREATE INDEX idx_user_ratings_user_id ON user_ratings (user_id);
+
+CREATE INDEX idx_approved_videos_valence ON approved_videos (sam_valence_avg);
+CREATE INDEX idx_approved_videos_arousal ON approved_videos (sam_arousal_avg);
 
 -- 插入一些测试视频数据
 INSERT INTO videos (title, src, rvm_valence, rvm_arousal) VALUES

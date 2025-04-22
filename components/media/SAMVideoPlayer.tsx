@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { handleFetchError } from '@/lib/utils'
-import SAMScale from '@/components/experiments/SAMScale'
+import SAMScale from '@/components/media/SAMScale'
 
 interface Video {
   id: string
@@ -63,6 +63,7 @@ export default function SAMVideoPlayer({ username = '', userId = 0 }: SAMVideoPl
     const watchDuration = startTimeRef.current ? (endTime - startTimeRef.current) / 1000 : 0
 
     try {
+      // 注意：后端API期望的参数顺序是 valence 在前，arousal 在后
       const response = await fetch('/api/sam-ratings', {
         method: 'POST',
         headers: {
@@ -71,8 +72,8 @@ export default function SAMVideoPlayer({ username = '', userId = 0 }: SAMVideoPl
         body: JSON.stringify({
           videoId: currentVideo.id,
           userId,
+          valence, // 交换顺序，确保与后端API匹配
           arousal,
-          valence,
           watchDuration,
         }),
       })

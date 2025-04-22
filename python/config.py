@@ -65,6 +65,16 @@ VIDEO_CONFIG = {
     'TARGET_FPS': 30,  # 目标帧率
 }
 
+# SAM评分设置
+SAM_RATING_CONFIG = {
+    'MAX_UNRATED_VIDEOS': 40,  # 未评分视频总数上限
+    'MIN_RATINGS_PER_VIDEO': 16,  # 每个视频最少需要的评分数
+    'VALENCE_DEVIATION_THRESHOLD': 0.2,  # 效价偏离中性的阈值
+    'AROUSAL_DEVIATION_THRESHOLD': 0.2,  # 唤醒度偏离中性的阈值
+    'VALENCE_VARIANCE_THRESHOLD': 0.06,  # 效价方差阈值
+    'AROUSAL_VARIANCE_THRESHOLD': 0.06,  # 唤醒度方差阈值
+}
+
 # Storage settings
 STORAGE_CONFIG = {
     'MIN_FREE_SPACE_GB': 5,  # 最小剩余空间（GB）

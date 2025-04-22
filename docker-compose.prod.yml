@@ -12,20 +12,22 @@ services:
       - "3000:3000"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - POSTGRES_HOST=db
-      - POSTGRES_DB=videoeeg
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - MONGO_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017/videoeeg
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/video_player_db
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD:-123456}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_CONTINUE_ON_ERROR=false
+      - APP_MOCK_SERVICE_ENABLED=false
+      - DATABASE_URL=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-123456}@db:5432/video_player_db
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
     depends_on:
       - db
-      - mongodb
       - redis
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health-check"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,29 +37,47 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=videoeeg
-      - POSTGRES_USER=${POSTGRES_USER:-admin}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=video_player_db
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-123456}
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # 添加MongoDB服务为爬虫提供存储
   mongodb:
     image: mongo:4.4
     volumes:
       - mongo_data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-admin}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-password}
     restart: always
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-password}@localhost:27017/admin --quiet
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      
+  # 添加视频爬虫服务
+  spider:
+    build:
+      context: .
+      dockerfile: docker/spider.Dockerfile
+    volumes:
+      - video_data:/app/downloads
+    depends_on:
+      - mongodb
+      - db
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB=video_db
+      - DB_NAME=video_player_db
+      - DB_USER=${POSTGRES_USER:-postgres}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-123456}
+      - DB_HOST=db
+      - DB_PORT=5432
+    restart: on-failure
 
   redis:
     image: redis:6
@@ -72,5 +92,6 @@ services:
 
 volumes:
   postgres_data:
-  mongo_data:
   redis_data:
+  mongo_data:
+  video_data:

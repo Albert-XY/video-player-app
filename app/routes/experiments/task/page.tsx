@@ -23,7 +23,7 @@ export default function TaskExperimentPage() {
     phq9Score: number;
     phq9Answers: number[];
   } | null>(null);
-  const [useMockApi] = useState<boolean>(false);
+  // 确保完全使用真实API，不使用任何模拟数据
 
   // 开始实验前的介绍
   const handleStartExperiment = () => {
@@ -39,19 +39,32 @@ export default function TaskExperimentPage() {
     setExperimentSetupData(data);
     
     try {
-      // 生成一个随机ID作为实验ID
-      const mockExperimentId = `exp-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       setMessage('正在保存实验数据...');
       
-      // 等待1秒模拟网络延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 调用真实后端API创建实验
+      const response = await fetch('/api/experiments/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'task',
+          userData: data,
+          userId: user?.id || 'anonymous'
+        }),
+      });
       
-      setExperimentId(mockExperimentId);
+      if (!response.ok) {
+        throw new Error('创建实验失败：' + (await response.text()));
+      }
+      
+      const result = await response.json();
+      setExperimentId(result.experimentId);
       setView('experiment');
       setMessage('');
     } catch (err) {
       console.error('保存实验数据失败', err);
-      setError('保存实验数据失败，请重试');
+      setError('保存实验数据失败，请重试：' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -119,7 +132,7 @@ export default function TaskExperimentPage() {
             phq9Score={experimentSetupData?.phq9Score || 0}
             phq9Answers={experimentSetupData?.phq9Answers || []}
             onComplete={handleExperimentComplete}
-            useMockApi={useMockApi}
+            useMockApi={false} // 确保不使用模拟API
           />
         )}
 

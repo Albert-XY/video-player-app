@@ -1,7 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import mockApi, { Video } from '@/lib/mock-api';
+
+interface Video {
+  id: number;
+  title: string;
+  description?: string;
+  src: string;  // API返回的视频URL字段
+  url?: string;  // 兼容旧字段名
+  thumbnail?: string;
+  duration?: number;
+  views?: number;
+  rating?: number;
+  valence?: number;
+  arousal?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
 import VideoPlayer from '@/components/media/VideoPlayer';
 import Link from 'next/link';
 
@@ -14,7 +29,11 @@ export default function TestPlayerPage() {
   useEffect(() => {
     async function loadVideos() {
       try {
-        const data = await mockApi.getVideos();
+        const response = await fetch('/api/videos');
+        if (!response.ok) {
+          throw new Error(`API错误: ${response.status}`);
+        }
+        const data = await response.json();
         setVideos(data);
         if (data.length > 0) {
           setSelectedVideo(data[0]);
@@ -72,15 +91,20 @@ export default function TestPlayerPage() {
           {selectedVideo ? (
             <div className="bg-gray-900 rounded-lg overflow-hidden">
               <VideoPlayer 
-                videoSrc={selectedVideo.url} 
-                posterSrc={selectedVideo.thumbnail}
-                title={selectedVideo.title}
+                video={{
+                  id: selectedVideo.id,
+                  title: selectedVideo.title,
+                  path: selectedVideo.src || selectedVideo.url || ''
+                }}
+                experimentId={null}
+                onVideoComplete={() => console.log('视频播放完成')}
+                disableControls={false}
               />
               <div className="p-4 bg-white rounded-b-lg shadow">
                 <h2 className="text-xl font-semibold mb-2">{selectedVideo.title}</h2>
                 <div className="flex items-center text-sm text-gray-500 mb-4">
-                  <span className="mr-3">{selectedVideo.views} 次观看</span>
-                  <span>评分: {selectedVideo.rating}/5</span>
+                  <span className="mr-3">{selectedVideo.views || 0} 次观看</span>
+                  <span>评分: {selectedVideo.rating || 0}/5</span>
                 </div>
                 <p className="text-gray-700">{selectedVideo.description}</p>
               </div>
@@ -112,12 +136,14 @@ export default function TestPlayerPage() {
                     alt={video.title}
                     className="absolute inset-0 w-full h-full object-cover rounded"
                   />
-                  <span className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
-                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-                  </span>
+                  {video.duration && (
+                    <span className="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+                      {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
                 </div>
                 <h4 className="font-medium line-clamp-2">{video.title}</h4>
-                <p className="text-xs text-gray-500 mt-1">{video.views} 次观看</p>
+                <p className="text-xs text-gray-500 mt-1">{video.views || 0} 次观看</p>
               </div>
             ))}
           </div>
