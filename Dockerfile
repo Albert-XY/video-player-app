@@ -6,8 +6,22 @@ FROM node:18 as frontend-build
 ENV npm_config_legacy_peer_deps=true
 WORKDIR /app/frontend
 COPY package*.json ./
+COPY tsconfig.json ./
+COPY next.config.mjs ./
+COPY tailwind.config.ts ./
+COPY postcss.config.mjs ./
 RUN npm install --legacy-peer-deps
-COPY . .
+# 只复制前端相关文件，避免复制后端和其他不相关文件
+COPY app/ ./app/
+COPY public/ ./public/
+COPY components/ ./components/
+COPY lib/ ./lib/
+COPY hooks/ ./hooks/
+COPY types/ ./types/
+COPY styles/ ./styles/ || true
+# 设置环境变量以避免构建错误
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Stage 2: Build the backend (Spring Boot)
