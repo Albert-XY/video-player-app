@@ -28,7 +28,7 @@ jobs:
         run: npm run test:docker
       
       - name: 上传测试覆盖率报告
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-coverage
           path: coverage/

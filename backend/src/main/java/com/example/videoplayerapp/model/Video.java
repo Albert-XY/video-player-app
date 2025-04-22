@@ -18,6 +18,9 @@ public class Video {
     private String title;
     private LocalDateTime addedTime;
     
+    private String url;      // 视频URL
+    private int duration;    // 视频时长（秒）
+    
     // 最终评分（RVM和SAM的平均值）
     private double valence;
     private double arousal;

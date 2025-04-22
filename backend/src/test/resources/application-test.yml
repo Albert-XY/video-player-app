@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    # 使用H2内存数据库用于测试
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+app:
+  mock-service:
+    enabled: true  # 启用模拟服务用于测试
+
+# 禁用安全配置用于测试
+security:
+  basic:
+    enabled: false
