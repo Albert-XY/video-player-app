@@ -29,12 +29,18 @@ describe('认证API测试', () => {
       user: { id: 1, username: 'testuser' },
       token: 'mock-jwt-token',
     };
-    // mock fetch 返回 Response-like 对象
-    mockFetch.mockResolvedValueOnce({
+    
+    // 创建一个完整的Response对象
+    const responseObj = {
       ok: true,
       status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'Content-Type': 'application/json' }),
       json: async () => mockResponse,
-    });
+    };
+    
+    // mock fetch 返回完整的 Response 对象
+    mockFetch.mockResolvedValueOnce(responseObj);
 
     // 用 fetchWithAuth 而不是 fetch
     const response = await fetchWithAuth('/api/auth/login', {
@@ -51,11 +57,16 @@ describe('认证API测试', () => {
   });
   
   it('fetchWithAuth应在请求中包含授权头', async () => {
-    mockFetch.mockResolvedValueOnce({
+    // 创建一个完整的Response对象
+    const responseObj = {
       ok: true,
       status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'Content-Type': 'application/json' }),
       json: async () => ({ data: 'test data' }),
-    });
+    };
+    
+    mockFetch.mockResolvedValueOnce(responseObj);
 
     await fetchWithAuth('/api/protected-resource');
 

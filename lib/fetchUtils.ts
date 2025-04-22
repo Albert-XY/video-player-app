@@ -27,7 +27,7 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   });
   
   // 处理401未授权情况
-  if (response.status === 401) {
+  if (response && response.status === 401) {
     // 清除失效的token
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');

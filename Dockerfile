@@ -18,7 +18,6 @@ COPY components/ ./components/
 COPY lib/ ./lib/
 COPY hooks/ ./hooks/
 COPY types/ ./types/
-COPY styles/ ./styles/ || true
 # 设置环境变量以避免构建错误
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
