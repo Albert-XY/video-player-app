@@ -3,7 +3,7 @@ import { Form, Input, Select, Button, Checkbox, Modal } from 'antd';
 
 const { Option } = Select;
 
-interface PersonalInfo {
+export interface PersonalInfo {
   name: string;
   gender: 'male' | 'female' | 'other';
   age: number;
@@ -20,7 +20,7 @@ interface PersonalInfoFormProps {
   onSubmit: (info: PersonalInfo) => void;
 }
 
-export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ onSubmit }) => {
+const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ onSubmit }) => {
   const [form] = Form.useForm();
   const [consentChecked, setConsentChecked] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
@@ -99,7 +99,7 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ onSubmit }) 
 
       <Modal
         title="隐私政策和实验同意书"
-        visible={showPrivacyPolicy}
+        open={showPrivacyPolicy}
         onOk={togglePrivacyPolicy}
         onCancel={togglePrivacyPolicy}
       >
@@ -115,4 +115,6 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ onSubmit }) 
     </Form>
   );
 };
+
+export default PersonalInfoForm;
 

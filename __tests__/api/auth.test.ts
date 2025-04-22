@@ -30,19 +30,18 @@ describe('认证API测试', () => {
       token: 'mock-jwt-token',
     };
     
-    // 创建一个完整的Response对象
-    const responseObj = {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      json: async () => mockResponse,
-    };
+    // 使用适合测试环境的Response构造
+    const responseObj = new Response(
+      JSON.stringify(mockResponse),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
     
-    // mock fetch 返回完整的 Response 对象
-    mockFetch.mockResolvedValueOnce(responseObj);
+    // 确保mockFetch会在测试中被调用
+    mockFetch.mockImplementation(() => Promise.resolve(responseObj));
 
-    // 用 fetchWithAuth 而不是 fetch
     const response = await fetchWithAuth('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -57,16 +56,17 @@ describe('认证API测试', () => {
   });
   
   it('fetchWithAuth应在请求中包含授权头', async () => {
-    // 创建一个完整的Response对象
-    const responseObj = {
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      headers: new Headers({ 'Content-Type': 'application/json' }),
-      json: async () => ({ data: 'test data' }),
-    };
+    // 使用适合测试环境的Response构造
+    const responseObj = new Response(
+      JSON.stringify({ data: 'test data' }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
     
-    mockFetch.mockResolvedValueOnce(responseObj);
+    // 确保mockFetch会在测试中被调用
+    mockFetch.mockImplementation(() => Promise.resolve(responseObj));
 
     await fetchWithAuth('/api/protected-resource');
 

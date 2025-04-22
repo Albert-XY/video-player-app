@@ -16,19 +16,20 @@ const questions = [
 ];
 
 interface PHQ9AssessmentProps {
-  onSubmit: (score: number) => void;
+  onSubmit: (score: number, answers: number[]) => void;
 }
 
-export const PHQ9Assessment: React.FC<PHQ9AssessmentProps> = ({ onSubmit }) => {
+const PHQ9Assessment: React.FC<PHQ9AssessmentProps> = ({ onSubmit }) => {
   const [form] = Form.useForm();
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
 
   const handleSubmit = (values: { [key: string]: number }) => {
-    const totalScore = Object.values(values).reduce((sum, value) => sum + value, 0);
+    const answers = Object.values(values);
+    const totalScore = answers.reduce((sum, value) => sum + value, 0);
     setScore(totalScore);
     setShowResult(true);
-    onSubmit(totalScore);
+    onSubmit(totalScore, answers);
   };
 
   const getDepressionLevel = (score: number) => {
@@ -94,4 +95,6 @@ export const PHQ9Assessment: React.FC<PHQ9AssessmentProps> = ({ onSubmit }) => {
     </div>
   );
 };
+
+export default PHQ9Assessment;
 

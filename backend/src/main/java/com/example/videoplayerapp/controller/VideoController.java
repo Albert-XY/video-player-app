@@ -132,4 +132,15 @@ public class VideoController {
         Map<String, Object> result = experimentService.processExperimentData(experimentData);
         return ResponseEntity.ok(result);
     }
+    
+    /**
+     * 获取已审核通过的视频
+     * 需要用户权限
+     */
+    @GetMapping("/approved")
+    public ResponseEntity<List<Video>> getApprovedVideos() {
+        log.info("请求获取已审核通过的视频");
+        List<Video> videos = videoService.getApprovedVideos();
+        return ResponseEntity.ok(videos);
+    }
 }

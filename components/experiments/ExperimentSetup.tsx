@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import PersonalInfoForm, { PersonalInfo } from '../forms/PersonalInfoForm';
-import PHQ9Assessment from '../forms/PHQ9Assessment';
+import PHQ9Assessment from '../forms/assessment/PHQ9Assessment';
 
 interface ExperimentSetupProps {
   onComplete: (experimentData: {
