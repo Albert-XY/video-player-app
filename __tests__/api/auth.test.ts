@@ -5,10 +5,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fetchWithAuth } from '../../lib/fetchUtils';
 
-// 全局 fetch mock
-const mockFetch = vi.fn();
-global.fetch = mockFetch as any;
-
 // mock localStorage 全局设置
 Object.defineProperty(global, 'localStorage', {
   value: {
@@ -19,11 +15,61 @@ Object.defineProperty(global, 'localStorage', {
   writable: true
 });
 
-beforeEach(() => {
-  vi.clearAllMocks();
+describe('认证API测试', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('登录API应返回用户信息和令牌', async () => {
+    const mockResponse = {
+      user: { id: 1, username: 'testuser' },
+      token: 'mock-jwt-token',
+    };
+
+    // 用 vi.stubGlobal 保证 fetch mock 全局生效
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockResponse),
+      })
+    ));
+
+    const response = await fetchWithAuth('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'testuser', password: 'password' }),
+    });
+
+    const data = await response.json();
+
+    expect(response.ok).toBe(true);
+    expect(data).toEqual(mockResponse);
+  });
+
+  it('fetchWithAuth应在请求中包含授权头', async () => {
+    vi.stubGlobal('fetch', vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ data: 'test data' }),
+      })
+    ));
+
+    await fetchWithAuth('/api/protected-resource');
+
+    // 断言 fetch 被调用参数
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/protected-resource',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'Authorization': 'Bearer test-token',
+        }),
+      })
+    );
+  });
 });
 
-describe('认证API测试', () => {
   it('登录API应返回用户信息和令牌', async () => {
     const mockResponse = {
       user: { id: 1, username: 'testuser' },
