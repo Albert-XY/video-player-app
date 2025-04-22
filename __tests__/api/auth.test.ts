@@ -1,21 +1,27 @@
 /* 这个文件需要测试框架支持才能正常运行
- * 以下代码仅作为API测试的示例，在安装Jest和相关依赖后将可运行
+ * 以下代码作为API测试的示例，使用Vitest而非Jest
  */
 
-// 导入fetchWithAuth函数和useAuth钩子
-import { fetchWithAuth } from '@/lib/fetchUtils';
-import { useAuth } from '@/hooks/useAuth';
+// 导入测试工具
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// 模拟全局fetch和useAuth
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+// 导入fetchWithAuth函数
+import { fetchWithAuth } from '../../lib/fetchUtils';
 
-jest.mock('@/hooks/useAuth', () => ({
-  useAuth: jest.fn(),
+// 模拟global fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch as any;
+
+// 模拟用户钩子
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    token: 'mock-token',
+    isAuthenticated: true
+  }))
 }));
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 describe('认证API测试', () => {
@@ -49,17 +55,23 @@ describe('认证API测试', () => {
   });
   
   it('fetchWithAuth应在请求中包含授权头', async () => {
-    // 模拟useAuth返回的token
-    (useAuth as jest.Mock).mockReturnValue({
-      token: 'test-token',
-      user: { id: 1, username: 'testuser' },
-    });
-    
     // 模拟API响应
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({ data: 'test data' }),
+    });
+    
+    // 获取localStorage中的token
+    const originalLocalStorage = global.localStorage;
+    // 模拟LocalStorage
+    Object.defineProperty(global, 'localStorage', {
+      value: {
+        getItem: vi.fn().mockReturnValue('test-token'),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+      writable: true
     });
     
     // 使用fetchWithAuth
@@ -74,5 +86,11 @@ describe('认证API测试', () => {
         }),
       })
     );
+    
+    // 恢复原始LocalStorage
+    Object.defineProperty(global, 'localStorage', {
+      value: originalLocalStorage,
+      writable: true
+    });
   });
 });

@@ -14,13 +14,14 @@ import java.util.Map;
 @Slf4j
 public class HealthController {
 
-    @GetMapping("/health")
+    @GetMapping("/health-status")
     public ResponseEntity<?> healthCheck() {
-        log.info("健康检查接口被调用");
+        log.info("健康状态接口被调用");
         return ResponseEntity.ok(Map.of(
             "status", "UP",
             "timestamp", LocalDateTime.now().toString(),
-            "message", "服务运行正常"
+            "message", "服务运行正常",
+            "service", "video-player-backend"
         ));
     }
 }

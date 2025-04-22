@@ -14,6 +14,7 @@ D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplaye
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\repository\UserRepository.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\JwtAuthenticationFilter.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\service\MockUserService.java
+D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\service\UserServiceImpl.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\model\Experiment.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\jwt\JwtTokenUtil.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\jwt\JwtAuthenticationFilter.java
@@ -27,6 +28,7 @@ D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplaye
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\security\CustomUserDetailsService.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\service\ExperimentService.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\model\ExperimentData.java
+D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\service\UserService.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\controller\AuthController.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\controller\HealthCheckController.java
 D:\PycharmProjects\video-player-app\backend\src\main\java\com\example\videoplayerapp\dto\RegisterRequest.java

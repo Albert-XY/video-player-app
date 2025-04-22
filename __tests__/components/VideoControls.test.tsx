@@ -76,10 +76,12 @@ describe('视频控制栏组件测试', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    render(<VideoControls {...mockProps} />);
+    // 在每个测试前清除渲染
+    document.body.innerHTML = '';
   });
 
   test('应该正确渲染视频控制栏', () => {
+    render(<VideoControls {...mockProps} />);
     expect(screen.getByTestId('video-controls')).toBeInTheDocument();
     expect(screen.getByTestId('play-button')).toBeInTheDocument();
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
@@ -88,7 +90,11 @@ describe('视频控制栏组件测试', () => {
 
   test('播放/暂停按钮应该根据状态显示正确文本', () => {
     // 初始状态为未播放
+    const { unmount } = render(<VideoControls {...mockProps} />);
     expect(screen.getByTestId('play-button')).toHaveTextContent('播放');
+    
+    // 先清除之前的渲染
+    unmount();
     
     // 改变为播放状态
     render(<VideoControls {...mockProps} isPlaying={true} />);
@@ -96,8 +102,12 @@ describe('视频控制栏组件测试', () => {
   });
 
   test('点击播放按钮应该触发正确的回调', () => {
+    const { unmount } = render(<VideoControls {...mockProps} />);
     fireEvent.click(screen.getByTestId('play-button'));
     expect(mockProps.onPlay).toHaveBeenCalledTimes(1);
+    
+    // 先清除之前的渲染
+    unmount();
     
     // 改变为播放状态
     render(<VideoControls {...mockProps} isPlaying={true} />);
@@ -106,17 +116,23 @@ describe('视频控制栏组件测试', () => {
   });
 
   test('调整音量应该触发音量变化回调', () => {
+    render(<VideoControls {...mockProps} />);
     fireEvent.change(screen.getByTestId('volume-input'), { target: { value: '0.8' } });
     expect(mockProps.onVolumeChange).toHaveBeenCalledWith(0.8);
   });
 
   test('调整进度条应该触发seek回调', () => {
+    render(<VideoControls {...mockProps} />);
     fireEvent.change(screen.getByTestId('progress-input'), { target: { value: '60' } });
     expect(mockProps.onSeek).toHaveBeenCalledWith(60);
   });
 
   test('时间显示应该正确格式化', () => {
+    const { unmount } = render(<VideoControls {...mockProps} />);
     expect(screen.getByTestId('time-display')).toHaveTextContent('30/120');
+    
+    // 先清除之前的渲染
+    unmount();
     
     // 更改时间
     render(<VideoControls {...mockProps} currentTime={45} duration={90} />);

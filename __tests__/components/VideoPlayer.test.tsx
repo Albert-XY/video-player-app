@@ -1,6 +1,7 @@
 // 简化版测试文件，减少对复杂测试环境的依赖
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render } from '../utils/test-utils';
+import { describe, test, expect, beforeAll, vi } from 'vitest';
 import VideoPlayer from '../../components/media/VideoPlayer';
 
 // 模拟视频数据
@@ -11,14 +12,14 @@ const mockVideoData = {
 };
 
 // 模拟回调函数
-const mockOnVideoComplete = jest.fn();
+const mockOnVideoComplete = vi.fn();
 
 // 模拟HTMLMediaElement
 beforeAll(() => {
   // 简化版HTMLMediaElement模拟
-  window.HTMLMediaElement.prototype.play = jest.fn();
-  window.HTMLMediaElement.prototype.pause = jest.fn();
-  window.HTMLMediaElement.prototype.load = jest.fn();
+  window.HTMLMediaElement.prototype.play = vi.fn();
+  window.HTMLMediaElement.prototype.pause = vi.fn();
+  window.HTMLMediaElement.prototype.load = vi.fn();
 });
 
 describe('VideoPlayer 组件基础测试', () => {
