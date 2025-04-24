@@ -15,18 +15,21 @@ SPIDER_SETTINGS = {
         'https://www.bilibili.com/v/popular/rank/dance',
         'https://www.bilibili.com/v/popular/rank/music'
     ],
-    'DOWNLOAD_DELAY': 3,
-    'CONCURRENT_REQUESTS': 8,
+    'DOWNLOAD_DELAY': 10,  # 增加到10秒
+    'CONCURRENT_REQUESTS': 1,  # 减少到1个并发请求
     'USER_AGENT': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
     'RETRY_TIMES': 3,
     'RETRY_HTTP_CODES': [500, 502, 503, 504, 522, 524, 408, 429],
     'COOKIES_ENABLED': True,
-    'ROBOTSTXT_OBEY': False,
+    'ROBOTSTXT_OBEY': True,  # 确保遵守robots.txt
     'DEFAULT_REQUEST_HEADERS': {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
         'Accept-Encoding': 'gzip, deflate, br',
-    }
+    },
+    'CLOSESPIDER_PAGECOUNT': 10,  # 限制爬取的页面数量
+    'CLOSESPIDER_ITEMCOUNT': 100,  # 限制爬取的视频数量
+    'DAILY_REQUEST_LIMIT': 100,  # 每日请求限制
 }
 
 # Database settings
@@ -59,8 +62,8 @@ VIDEO_CONFIG = {
     'MAX_SIZE_MB': 500,  # 最大视频大小（MB）
     'ALLOWED_FORMATS': ['mp4', 'webm'],
     'DOWNLOAD_PATH': os.path.join(os.path.dirname(os.path.dirname(__file__)), 'downloads'),
-    'MIN_DURATION': 10,  # 最短视频时长（秒）
-    'MAX_DURATION': 600,  # 最长视频时长（秒）
+    'MIN_DURATION': 150,  # 最短视频时长（秒）
+    'MAX_DURATION': 210,  # 最长视频时长（秒）
     'MIN_RESOLUTION': (720, 480),  # 最低分辨率
     'TARGET_FPS': 30,  # 目标帧率
 }

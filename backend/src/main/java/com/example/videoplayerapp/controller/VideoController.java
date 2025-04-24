@@ -54,7 +54,7 @@ public class VideoController {
     public ResponseEntity<List<Video>> getRandomVideos(
             @RequestParam(name = "count", defaultValue = "5") int count) {
         log.info("请求获取随机视频，数量: {}", count);
-        List<Video> videos = videoService.getRandomExperimentalVideos(count);
+        List<Video> videos = videoService.getRandomVideos(count);
         return ResponseEntity.ok(videos);
     }
     

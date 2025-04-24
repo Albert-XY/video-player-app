@@ -55,7 +55,7 @@ const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({ onSubmit }) => {
       <Form.Item name="age" label="年龄" rules={[{ required: true, type: 'number', min: 0, max: 120 }]}>
         <Input type="number" />
       </Form.Item>
-      <Form.Item name="condition" label="病症（如无请填"无"）" rules={[{ required: true }]}>
+      <Form.Item name="condition" label="病症(如无请填无)" rules={[{ required: true }]}>
         <Input />
       </Form.Item>
       <Form.Item name="phone" label="电话号码" rules={[{ required: true }]}>
